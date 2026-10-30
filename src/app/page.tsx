@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppShell from "./components/app-shell";
 import GlobalAnalyticsPanel from "./components/global-analytics-panel";
@@ -36,9 +36,17 @@ export default function Home() {
   const [searchError, setSearchError] = useState("");
   const [matchError, setMatchError] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchRequest = useRef<AbortController | null>(null);
+  const matchRequest = useRef<AbortController | null>(null);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    searchRequest.current?.abort();
+    matchRequest.current?.abort();
+    setSearching(false);
+    setLoadingMatches(false);
     const term = query.trim();
     if (term.length < 2) {
       setSearchError("Enter at least 2 characters to search.");
@@ -47,6 +55,7 @@ export default function Home() {
       return;
     }
     setSearching(true);
+    setLoadingMatches(false);
     setSearchError("");
     setPlayers([]);
     setSelectedPlayer(null);
@@ -57,14 +66,16 @@ export default function Home() {
     setHeroStatsAvailable(false);
     setMatchError("");
     setHasSearched(true);
-    void fetch(`/api/players/search?q=${encodeURIComponent(term)}`)
+    const controller = new AbortController();
+    searchRequest.current = controller;
+    void fetch(`/api/players/search?q=${encodeURIComponent(term)}`, { signal: controller.signal })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Player search failed.");
-        setPlayers(Array.isArray(data.players) ? data.players : []);
+        if (!controller.signal.aborted) setPlayers(Array.isArray(data.players) ? data.players : []);
       })
-      .catch((error: unknown) => setSearchError(error instanceof Error ? error.message : "Player search failed."))
-      .finally(() => setSearching(false));
+      .catch((error: unknown) => { if (!controller.signal.aborted) setSearchError(error instanceof Error ? error.message : "Player search failed."); })
+      .finally(() => { if (!controller.signal.aborted) setSearching(false); });
   }
 
   const handleSelectPlayer = useCallback((player: Player) => {
@@ -72,6 +83,7 @@ export default function Home() {
       setMatchError("This result does not include a usable account ID.");
       return;
     }
+    searchRequest.current?.abort();
     setSelectedPlayer(player);
     setLoadingMatches(true);
     setMatches([]);
@@ -82,10 +94,14 @@ export default function Home() {
     setHeroStatsAvailable(false);
     setHeroImages({});
     setMatchError("");
-    void fetch(`/api/players/${player.account_id}/matches`)
+    matchRequest.current?.abort();
+    const controller = new AbortController();
+    matchRequest.current = controller;
+    void fetch(`/api/players/${player.account_id}/matches`, { signal: controller.signal })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Could not load match history.");
+        if (controller.signal.aborted) return;
         setMatches(Array.isArray(data.matches) ? data.matches : []);
         setHeroNames(data.heroNames && typeof data.heroNames === "object" ? data.heroNames : {});
         setHeroImages(data.heroImages && typeof data.heroImages === "object" ? data.heroImages : {});
@@ -95,8 +111,8 @@ export default function Home() {
         setPlayerHeroStats(Array.isArray(data.heroStats) ? data.heroStats : []);
         setHeroStatsAvailable(data.heroStatsAvailable === true);
       })
-      .catch((error: unknown) => setMatchError(error instanceof Error ? error.message : "Could not load match history."))
-      .finally(() => setLoadingMatches(false));
+      .catch((error: unknown) => { if (!controller.signal.aborted) setMatchError(error instanceof Error ? error.message : "Could not load match history."); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingMatches(false); });
   }, []);
 
   useEffect(() => {
@@ -110,6 +126,21 @@ export default function Home() {
     return () => controller.abort();
   }, [handleSelectPlayer]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInput.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      searchRequest.current?.abort();
+      matchRequest.current?.abort();
+    };
+  }, []);
+
   const resultMatches = matches.filter((match) => match.player_match_outcome === 1 || match.player_match_outcome === 2);
   const wins = resultMatches.filter((match) => match.player_match_outcome === 1).length;
   const losses = resultMatches.filter((match) => match.player_match_outcome === 2).length;
@@ -121,14 +152,18 @@ export default function Home() {
   return (
     <AppShell active="Overview">
       <div className="content-inner">
-          <div className="page-heading">
-            <div><p className="eyebrow">WELCOME BACK, EXPLORER</p><h1>Command center<span>.</span></h1><p className="muted">Track the meta. Read the match. Play with intent.</p></div>
-            <button className="refresh-button"><span>Refresh data</span></button>
+          <div className="page-heading overview-heading">
+            <div><p className="eyebrow">DEADLOCK INTELLIGENCE / OVERVIEW</p><h1>Live meta brief<span>.</span></h1><p className="muted">A field report from the match data: trends, heroes, and players worth a closer look.</p></div>
+            <button type="button" className="refresh-button" onClick={() => { setAnalyticsRefresh((value) => value + 1); if (selectedPlayer) handleSelectPlayer(selectedPlayer); }} disabled={searching || loadingMatches}><span>Refresh data</span></button>
           </div>
+          <nav className="overview-shortcuts" aria-label="Explore analytics">
+            <span className="overview-shortcut-label">INTELLIGENCE INDEX</span>
+            <Link href="/matches">Match feed <b>01</b></Link><Link href="/heroes">Hero meta <b>02</b></Link><Link href="/items">Item data <b>03</b></Link><Link href="/leaderboards">Rankings <b>04</b></Link>
+          </nav>
 
           <form id="player-search" className="search-bar" onSubmit={handleSearch}>
             <span className="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a Steam name or account ID..." aria-label="Search a Steam name or account ID" />
+            <input ref={searchInput} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a Steam name or account ID..." aria-label="Search a Steam name or account ID" />
             <kbd>Ctrl K</kbd>
             <button type="submit" disabled={searching}>{searching ? "Searching..." : "Search"}</button>
           </form>
@@ -137,10 +172,10 @@ export default function Home() {
           {hasSearched && !searching && !searchError && players.length === 0 && <p className="api-message">No players found. Try another name or account ID.</p>}
           {players.length > 0 && <section className="player-results" aria-label="Player search results"><p className="eyebrow">SELECT A PLAYER · {players.length} RESULTS</p>{players.map((player, index) => {
             const href = typeof player.account_id === "number" ? `/players/${player.account_id}` : "#player-search";
-            return <Link className="player-result" href={href} key={player.account_id ?? index}><span className="player-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{player.avatar ? null : (player.personaname?.slice(0, 1) ?? "?")}</span><span className="player-result-info"><strong>{player.personaname || "Unknown Steam player"}</strong><small>Account ID: {player.account_id ?? "Unavailable"}{typeof player.matches_played_last_30d === "number" ? ` · ${player.matches_played_last_30d} matches in last 30 days` : ""}</small></span><span className="row-arrow">↗</span></Link>;
+            return <div className="player-result" key={player.account_id ?? index}><button type="button" className="player-result-select" onClick={() => handleSelectPlayer(player)} disabled={typeof player.account_id !== "number"}><span className="player-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{player.avatar ? null : (player.personaname?.slice(0, 1) ?? "?")}</span><span className="player-result-info"><strong>{player.personaname || "Unknown Steam player"}</strong><small>Account ID: {player.account_id ?? "Unavailable"}{typeof player.matches_played_last_30d === "number" ? ` · ${player.matches_played_last_30d} matches in last 30 days` : ""}</small></span></button><Link className="row-arrow" href={href} aria-label={`Open ${player.personaname || "player"} profile`}>↗</Link></div>;
           })}</section>}
 
-          <GlobalAnalyticsPanel />
+          <GlobalAnalyticsPanel key={analyticsRefresh} />
 
           {selectedPlayer && <section className="panel player-profile" aria-label="Player profile">
             <div className="profile-cover" />
@@ -190,7 +225,7 @@ export default function Home() {
               return Number.isSafeInteger(match.match_id) ? <Link className="match-row match-row-link" href={"/matches/" + match.match_id + "?account_id=" + selectedPlayer.account_id} key={match.match_id}>{rowContents}</Link> : <div className="match-row" key={String(match.start_time ?? "match") + "-" + index}>{rowContents}</div>;
             })}</div>}
           </section>
-          <footer><span>DEADLOCK INTELLIGENCE <b>·</b> DATA WITH INTENT</span><span>Last synced just now <i /></span></footer>
+          <footer><span>DEADLOCK INTELLIGENCE <b>·</b> DATA WITH INTENT</span><span>Data supplied by Deadlock API <i /></span></footer>
         </div>
     </AppShell>
   );

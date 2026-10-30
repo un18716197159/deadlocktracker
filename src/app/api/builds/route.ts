@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { getCommunityBuilds } from "../../../lib/items-api";
+import { getCommunityBuilds, ItemApiError } from "../../../lib/items-api";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams;
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     return NextResponse.json({ builds: await getCommunityBuilds({ heroId, start, limit, sort, query: query.get("q") ?? undefined }) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not load community builds.";
+    const message = error instanceof ItemApiError ? error.message : "Could not load community builds.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

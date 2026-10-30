@@ -36,6 +36,9 @@ button { cursor: pointer; }
 .player-result-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 14px Georgia,serif; }
 .player-result-info small, .selected-player small { color: #85847d; font-size: 10px; }
 .player-result .row-arrow { margin-left: auto; color: var(--accent); }
+.player-result-select { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; padding: 0; border: 0; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.player-result-select:disabled { cursor: default; opacity: .65; }
+.player-result .row-arrow { flex: 0 0 auto; padding: 7px; }
 .player-result-skeleton { pointer-events: none; }
 .player-result-skeleton > .eyebrow { margin-bottom: 12px; }
 .player-result-skeleton { display: grid; gap: 8px; }

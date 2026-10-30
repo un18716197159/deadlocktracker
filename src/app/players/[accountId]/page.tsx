@@ -85,7 +85,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
     <Link className="back-link" href="/#player-search">Back to player search</Link>
     <div className="page-heading">
       <div><p className="eyebrow">PLAYER PROFILE / LIVE API DATA</p><h1>{profile?.personaname || `Account ${accountId}`}<span>.</span></h1><p className="muted">A current view of the player data returned by Deadlock API.</p></div>
-      {profile?.profileurl && <a className="refresh-button" href={profile.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a>}
+      <div className="player-page-actions"><Link className="refresh-button" href={`/compare?left=${accountId}`}>Compare player ↗</Link>{profile?.profileurl && <a className="refresh-button" href={profile.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a>}</div>
     </div>
 
     <section className="panel player-profile">

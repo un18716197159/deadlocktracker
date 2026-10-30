@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { getItemHeroAnalytics, type ItemAnalyticsFilters } from "../../../../lib/items-api";
+import { getItemHeroAnalytics, ItemApiError, type ItemAnalyticsFilters } from "../../../../lib/items-api";
 
 function parseFilters(request: NextRequest): ItemAnalyticsFilters {
   const query = request.nextUrl.searchParams;
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ ite
     const rows = await getItemHeroAnalytics(Number(itemId), parseFilters(request));
     return NextResponse.json({ heroes: rows });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not load item hero analytics.";
+    const message = error instanceof ItemApiError ? error.message : "Could not load item hero analytics.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

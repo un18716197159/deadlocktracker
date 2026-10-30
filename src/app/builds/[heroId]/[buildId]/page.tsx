@@ -2,7 +2,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import AppShell from "../../../components/app-shell";
-import { getCommunityBuild } from "../../../../lib/items-api";
+import { getCommunityBuild, ItemApiError } from "../../../../lib/items-api";
 import { connection } from "next/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ heroId: string; buildId: string }> }) {
@@ -15,7 +15,10 @@ async function Content({ params }: { params: Promise<{ heroId: string; buildId: 
   if (!/^\d+$/.test(heroId) || !/^\d+$/.test(buildId) || !Number.isSafeInteger(Number(heroId)) || !Number.isSafeInteger(Number(buildId))) notFound();
   await connection();
   let view;
-  try { view = await getCommunityBuild(Number(heroId), Number(buildId)); } catch { notFound(); }
+  try { view = await getCommunityBuild(Number(heroId), Number(buildId)); } catch (error) {
+    if (error instanceof ItemApiError && error.status === 404) notFound();
+    return <main className="content-inner build-detail-page"><Link className="back-link" href="/builds">← Community builds</Link><p className="api-message error-message" role="alert">Published build details are unavailable. {error instanceof Error ? error.message : "Could not load this build."}</p></main>;
+  }
   const { build, hero, categories } = view;
   const heroBuild = build.hero_build;
   const count = (value?: number | null) => typeof value === "number" ? value.toLocaleString() : "Unavailable";
@@ -23,5 +26,5 @@ async function Content({ params }: { params: Promise<{ heroId: string; buildId: 
 }
 
 export default function Page({ params }: { params: Promise<{ heroId: string; buildId: string }> }) {
-  return <AppShell active="Items"><Suspense fallback={<main className="content-inner build-detail-page"><p className="api-message" role="status">Loading published build…</p></main>}><Content params={params} /></Suspense></AppShell>;
+  return <AppShell active="Builds"><Suspense fallback={<main className="content-inner build-detail-page"><p className="api-message" role="status">Loading published build…</p></main>}><Content params={params} /></Suspense></AppShell>;
 }

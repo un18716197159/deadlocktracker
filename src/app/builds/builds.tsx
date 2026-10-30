@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { BuildView } from "../../lib/items-api";
 
-type Props = { heroes: HeroAsset[] };
+type Props = { heroes: HeroAsset[]; initialHeroId: number | null };
 type Payload = { builds: BuildView[] };
 
-export default function Builds({ heroes }: Props) {
-  const [heroId, setHeroId] = useState("all");
+export default function Builds({ heroes, initialHeroId }: Props) {
+  const [heroId, setHeroId] = useState(initialHeroId === null ? "all" : String(initialHeroId));
   const [sort, setSort] = useState("weekly_favorites");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");

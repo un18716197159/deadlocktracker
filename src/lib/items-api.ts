@@ -5,6 +5,13 @@ import { getHeroes, type HeroAsset } from "./deadlock-api";
 const API = "https://api.deadlock-api.com/v1";
 const DAY = 86400;
 
+export class ItemApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ItemApiError";
+  }
+}
+
 export type ItemSlotType = "weapon" | "spirit" | "vitality";
 export type ItemProperty = { value?: string | number | null; label?: string | null; prefix?: string | null; postfix?: string | null; display_units?: string | null };
 export type ItemAsset = {
@@ -46,14 +53,14 @@ async function requestJson<T>(path: string, timeout = 20_000): Promise<T> {
   try {
     response = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeout), headers: { Accept: "application/json" } });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "TimeoutError") throw new Error("Deadlock API timed out. Please try again.");
-    throw new Error("Could not connect to Deadlock API.");
+    if (error instanceof DOMException && error.name === "TimeoutError") throw new ItemApiError("Deadlock API timed out. Please try again.", 504);
+    throw new ItemApiError("Could not connect to Deadlock API.", 502);
   }
   if (!response.ok) {
     const retry = response.headers.get("Retry-After");
-    throw new Error(`Deadlock API request failed (${response.status})${retry ? `. Retry after ${retry} seconds` : ""}.`);
+    throw new ItemApiError(`Deadlock API request failed (${response.status})${retry ? `. Retry after ${retry} seconds` : ""}.`, response.status);
   }
-  try { return await response.json() as T; } catch { throw new Error("Deadlock API returned invalid JSON."); }
+  try { return await response.json() as T; } catch { throw new ItemApiError("Deadlock API returned invalid JSON.", 502); }
 }
 
 function filtersQuery(filters: ItemAnalyticsFilters, bucket: string, heroId?: number) {
@@ -73,7 +80,7 @@ export async function getAllItemAssets(): Promise<ItemAsset[]> {
   "use cache";
   cacheLife("days");
   const result = await requestJson<unknown>("/assets/items?language=english");
-  if (!Array.isArray(result)) throw new Error("Deadlock API returned an invalid item catalog.");
+  if (!Array.isArray(result)) throw new ItemApiError("Deadlock API returned an invalid item catalog.", 502);
   return (result as ItemAsset[]).filter((item) => Number.isSafeInteger(item.id) && typeof item.name === "string");
 }
 

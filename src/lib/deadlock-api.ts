@@ -26,6 +26,8 @@ export type MatchHistoryEntry = {
   player_deaths?: number;
   player_assists?: number;
   player_match_outcome?: number;
+  game_mode?: number;
+  match_mode?: number;
 };
 
 export type HeroAsset = { id?: number; name?: string; description?: { lore?: string | null; playstyle?: string | null; role?: string | null } | null; images?: { icon_image_small?: string | null; icon_image_small_webp?: string | null; background_image?: string | null; background_image_webp?: string | null; hero_card_critical?: string | null } | null; in_development?: boolean; limited_testing?: boolean; [key: string]: unknown };
@@ -40,6 +42,13 @@ export type PlayerHeroStats = {
   assists?: number;
 };
 export type RankAsset = { tier?: number; name?: string; images?: Record<string, string | null> };
+export type PlayerRankEntry = { account_id: number; badge?: number; rank?: number; subrank?: number; last_match?: unknown };
+export type LeaderboardRegion = "Europe" | "Asia" | "NAmerica" | "SAmerica" | "Oceania";
+export type OfficialLeaderboardEntry = { account_name: string; possible_account_ids: number[]; rank: number; top_hero_ids: number[] };
+export type RankedSeasonAsset = { class_name: string; name: string; intervals: Array<{ interval: number; start_timestamp: number; end_timestamp: number; leaderboard_id: number }> };
+export type PlayerScoreboardMetric = { rank: number; account_id: number; value: number; matches: number };
+export type LeaderboardPlayerStats = { matches: number | null; wins: number | null; losses: number | null; winRate: number | null; kills: number | null; deaths: number | null; assists: number | null };
+export type LeaderboardPlayer = { place: number; name: string; accountId: number | null; avatar: string | null; rank: string | null; topHeroIds: number[]; stats: LeaderboardPlayerStats | null };
 
 export class DeadlockApiError extends Error {
   constructor(message: string, public status: number, public retryAfter?: string) {
@@ -115,6 +124,19 @@ export async function getHeroes(): Promise<HeroAsset[]> {
 
 export async function getPlayerRank(accountId: number): Promise<PlayerRank> {
   return request<PlayerRank>(`/v1/players/${accountId}/rank`);
+}
+
+export async function getPlayerRanks(accountIds: number[]): Promise<PlayerRankEntry[]> {
+  const ids = [...new Set(accountIds.filter((id) => Number.isSafeInteger(id) && id >= 0))];
+  if (!ids.length || ids.length > 1000) return [];
+  const params = new URLSearchParams({ account_ids: ids.join(",") });
+  const result = await request<unknown>(`/v1/players/rank?${params}`);
+  if (!Array.isArray(result)) throw new DeadlockApiError("Deadlock API returned invalid player ranks.", 502);
+  return result as PlayerRankEntry[];
+}
+
+export async function getRankedSeasons(): Promise<RankedSeasonAsset[]> {
+  return requestAssetList<RankedSeasonAsset>("/v1/assets/ranked-seasons", "Deadlock API returned invalid ranked seasons.");
 }
 
 export async function getPlayerHeroStats(accountId: number): Promise<PlayerHeroStats[]> {
@@ -291,4 +313,76 @@ export async function getMatchItems(): Promise<MatchItemAsset[]> {
   "use cache";
   cacheLife("days");
   return requestAssetList<MatchItemAsset>("/v1/assets/items?language=english", "Deadlock API returned invalid item assets.");
+}
+
+export async function getRegionalLeaderboard(region: LeaderboardRegion, heroId?: number, leaderboardId?: number): Promise<OfficialLeaderboardEntry[]> {
+  const params = new URLSearchParams();
+  if (leaderboardId !== undefined) params.set("leaderboard_id", String(leaderboardId));
+  const suffix = heroId === undefined ? "" : `/${heroId}`;
+  const result = await request<{ entries?: unknown }>(`/v1/leaderboard/${region}${suffix}${params.size ? `?${params}` : ""}`, 20_000);
+  if (!result || !Array.isArray(result.entries)) throw new DeadlockApiError("Deadlock API returned an invalid leaderboard.", 502);
+  return result.entries.flatMap((entry): OfficialLeaderboardEntry[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as Record<string, unknown>;
+    if (typeof row.account_name !== "string" || typeof row.rank !== "number") return [];
+    return [{
+      account_name: row.account_name,
+      rank: row.rank,
+      possible_account_ids: Array.isArray(row.possible_account_ids) ? row.possible_account_ids.filter((id): id is number => typeof id === "number" && Number.isSafeInteger(id) && id >= 0) : [],
+      top_hero_ids: Array.isArray(row.top_hero_ids) ? row.top_hero_ids.filter((id): id is number => typeof id === "number" && Number.isSafeInteger(id)) : [],
+    }];
+  });
+}
+
+const PLAYER_SCOREBOARD_FIELDS = ["wins", "losses", "winrate", "avg_kills_per_match", "avg_deaths_per_match", "avg_assists_per_match"] as const;
+type PlayerScoreboardField = typeof PLAYER_SCOREBOARD_FIELDS[number];
+
+async function getPlayerScoreboardField(accountIds: number[], field: PlayerScoreboardField, period: "30d" | "90d" | "all", heroId?: number): Promise<PlayerScoreboardMetric[]> {
+  const params = new URLSearchParams({ sort_by: field, sort_direction: "desc", account_ids: accountIds.join(","), game_mode: "normal", match_mode: "ranked,unranked", min_matches: "1", limit: "1000" });
+  if (period !== "all") params.set("min_unix_timestamp", String(Math.floor(Date.now() / 1000) - (period === "30d" ? 30 : 90) * 86400));
+  if (heroId !== undefined) params.set("hero_id", String(heroId));
+  const result = await request<unknown>(`/v1/analytics/scoreboards/players?${params}`, 20_000);
+  if (!Array.isArray(result)) throw new DeadlockApiError("Deadlock API returned invalid player scoreboard statistics.", 502);
+  return result as PlayerScoreboardMetric[];
+}
+
+async function getPlayerScoreboardStats(accountIds: number[], period: "30d" | "90d" | "all", heroId?: number): Promise<Map<number, LeaderboardPlayerStats>> {
+  if (!accountIds.length) return new Map();
+  const fieldResults = await Promise.allSettled(PLAYER_SCOREBOARD_FIELDS.map((field) => getPlayerScoreboardField(accountIds, field, period, heroId)));
+  const result = new Map<number, LeaderboardPlayerStats>();
+  fieldResults.forEach((fieldResult, index) => {
+    if (fieldResult.status !== "fulfilled") return;
+    const field = PLAYER_SCOREBOARD_FIELDS[index];
+    for (const row of fieldResult.value) {
+      if (!Number.isSafeInteger(row.account_id) || !Number.isFinite(row.value)) continue;
+      const current = result.get(row.account_id) ?? { matches: null, wins: null, losses: null, winRate: null, kills: null, deaths: null, assists: null };
+      if (field === "wins") current.wins = row.value;
+      if (field === "losses") current.losses = row.value;
+      if (field === "winrate") { current.matches = row.matches; current.winRate = row.value <= 1 ? row.value * 100 : row.value; }
+      if (field === "avg_kills_per_match") current.kills = row.value;
+      if (field === "avg_deaths_per_match") current.deaths = row.value;
+      if (field === "avg_assists_per_match") current.assists = row.value;
+      result.set(row.account_id, current);
+    }
+  });
+  return result;
+}
+
+export async function getLeaderboardPlayers(options: { region: LeaderboardRegion; heroId?: number; leaderboardId?: number; period: "30d" | "90d" | "all" }): Promise<LeaderboardPlayer[]> {
+  const entries = await getRegionalLeaderboard(options.region, options.heroId, options.leaderboardId);
+  const accountIds = [...new Set(entries.flatMap((entry) => entry.possible_account_ids.length === 1 ? entry.possible_account_ids : []))];
+  const [profileResult, rankResult, rankAssetsResult, statsResult] = await Promise.allSettled([
+    getSteamProfiles(accountIds), getPlayerRanks(accountIds), getRanks(), getPlayerScoreboardStats(accountIds, options.period, options.heroId),
+  ]);
+  const profilesById = new Map(profileResult.status === "fulfilled" ? profileResult.value.flatMap((profile) => typeof profile.account_id === "number" ? [[profile.account_id, profile] as const] : []) : []);
+  const ranksById = new Map(rankResult.status === "fulfilled" ? rankResult.value.map((rank) => [rank.account_id, rank]) : []);
+  const rankAssets = rankAssetsResult.status === "fulfilled" ? rankAssetsResult.value : [];
+  const statsById = statsResult.status === "fulfilled" ? statsResult.value : new Map<number, LeaderboardPlayerStats>();
+  return entries.map((entry) => {
+    const accountId = entry.possible_account_ids.length === 1 ? entry.possible_account_ids[0] : null;
+    const profile = accountId === null ? undefined : profilesById.get(accountId);
+    const currentRank = accountId === null ? undefined : ranksById.get(accountId);
+    const rankName = typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.name || `Tier ${currentRank.rank}` : null;
+    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
+  });
 }
