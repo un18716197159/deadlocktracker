@@ -18,13 +18,6 @@ function availableCount(values: Array<number | undefined>) {
   return values.filter((value) => typeof value === "number" && Number.isFinite(value) && value >= 0).length;
 }
 
-const heroes = [
-  { name: "Vindicta", role: "Sniper", color: "coral", winRate: "54.8%", pickRate: "12.4%", score: 88 },
-  { name: "Shiv", role: "Assassin", color: "gold", winRate: "53.2%", pickRate: "9.8%", score: 82 },
-  { name: "Seven", role: "Controller", color: "blue", winRate: "51.9%", pickRate: "15.1%", score: 76 },
-  { name: "Warden", role: "Frontline", color: "green", winRate: "50.7%", pickRate: "8.6%", score: 69 },
-];
-
 export default function Home() {
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -139,31 +132,30 @@ export default function Home() {
             <button type="submit" disabled={searching}>{searching ? "Searching..." : "Search"}</button>
           </form>
           {searchError && <p className="api-message error-message" role="alert">{searchError}</p>}
-          {searching && <p className="api-message" role="status">Searching Steam profiles...</p>}
+          {searching && <section className="player-results player-results-skeleton" aria-label="Searching player profiles" aria-busy="true"><p className="eyebrow">SEARCHING STEAM PROFILES</p>{[1, 2, 3].map((item) => <div className="player-result-skeleton" key={item}><span /><div><i /><i /></div></div>)}</section>}
           {hasSearched && !searching && !searchError && players.length === 0 && <p className="api-message">No players found. Try another name or account ID.</p>}
-          {players.length > 0 && <section className="player-results" aria-label="Player search results"><p className="eyebrow">SELECT A PLAYER · {players.length} RESULTS</p>{players.map((player, index) => <button className={`player-result ${selectedPlayer?.account_id === player.account_id ? "selected" : ""}`} key={player.account_id ?? index} onClick={() => handleSelectPlayer(player)}><span className="player-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{player.avatar ? null : (player.personaname?.slice(0, 1) ?? "?")}</span><span className="player-result-info"><strong>{player.personaname || "Unknown Steam player"}</strong><small>Account ID: {player.account_id ?? "Unavailable"}{typeof player.matches_played_last_30d === "number" ? ` · ${player.matches_played_last_30d} matches in last 30 days` : ""}</small></span><span className="row-arrow">↗</span></button>)}</section>}
+          {players.length > 0 && <section className="player-results" aria-label="Player search results"><p className="eyebrow">SELECT A PLAYER · {players.length} RESULTS</p>{players.map((player, index) => {
+            const href = typeof player.account_id === "number" ? `/players/${player.account_id}` : "#player-search";
+            return <Link className="player-result" href={href} key={player.account_id ?? index}><span className="player-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{player.avatar ? null : (player.personaname?.slice(0, 1) ?? "?")}</span><span className="player-result-info"><strong>{player.personaname || "Unknown Steam player"}</strong><small>Account ID: {player.account_id ?? "Unavailable"}{typeof player.matches_played_last_30d === "number" ? ` · ${player.matches_played_last_30d} matches in last 30 days` : ""}</small></span><span className="row-arrow">↗</span></Link>;
+          })}</section>}
 
           <div className="section-title"><h2>At a glance</h2><span className="preview-tag">PREVIEW DATA</span><span className="line" /></div>
           <div className="metric-grid">
-            <Metric label="MATCHES ANALYZED" value="12,847" change="+8.4%" note="vs. previous patch" />
-            <Metric label="ACTIVE PLAYERS" value="248.6K" change="+12.1%" note="last 24 hours" />
-            <Metric label="CURRENT WIN RATE" value="51.8%" change="+0.6%" note="all tracked matches" />
-            <Metric label="META SHIFT" value="0.42" change="↑ 14%" note="stability index" accent />
+            <Metric label="MATCHES ANALYZED" value="—" change="—" note="Connect a player to begin" />
+            <Metric label="ACTIVE PLAYERS" value="—" change="—" note="Global analytics unavailable" />
+            <Metric label="CURRENT WIN RATE" value="—" change="—" note="No live sample selected" />
+            <Metric label="META SHIFT" value="—" change="—" note="No live sample selected" accent />
           </div>
 
           <div className="dashboard-grid">
             <section className="panel hero-panel">
               <div className="panel-heading"><div><p className="eyebrow">THE META / PATCH 0.4.2</p><h2>Heroes in focus</h2></div><span className="preview-tag">PREVIEW DATA</span></div>
-              <div className="hero-list">
-                {heroes.map((hero) => <div className="hero-row" key={hero.name}><div className={`hero-portrait ${hero.color}`}>{hero.name.slice(0, 1)}</div><div className="hero-name"><strong>{hero.name}</strong><small>{hero.role}</small></div><div className="hero-stat"><small>WIN RATE</small><strong>{hero.winRate}</strong></div><div className="hero-stat"><small>PICK RATE</small><strong>{hero.pickRate}</strong></div><div className="score"><div className="score-track"><i style={{ width: `${hero.score}%` }} /></div><small>{hero.score}</small></div><span className="row-arrow">↗</span></div>)}
-              </div>
+              <p className="profile-note panel-empty">Global hero analytics will appear here after the analytics endpoint is connected. No placeholder values are shown.</p>
             </section>
 
             <section className="panel trend-panel">
               <div className="panel-heading"><div><p className="eyebrow">PERFORMANCE / 30 DAYS</p><h2>Win rate trend</h2></div><span className="preview-tag">PREVIEW DATA</span></div>
-              <div className="chart-value">51.8% <span>+0.6%</span></div>
-              <div className="chart"><div className="chart-labels"><span>54%</span><span>52%</span><span>50%</span><span>48%</span></div><div className="chart-lines"><i /><i /><i /><i /><svg viewBox="0 0 460 150" preserveAspectRatio="none" aria-label="Win rate trend chart"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#d26d56" stopOpacity=".26" /><stop offset="100%" stopColor="#d26d56" stopOpacity="0" /></linearGradient></defs><path d="M0,117 C28,112 45,120 67,104 S98,76 125,89 S155,104 179,81 S204,59 230,74 S261,108 282,85 S315,60 338,65 S366,88 387,53 S422,48 460,31 L460,150 L0,150 Z" fill="url(#chartFill)" /><path d="M0,117 C28,112 45,120 67,104 S98,76 125,89 S155,104 179,81 S204,59 230,74 S261,108 282,85 S315,60 338,65 S366,88 387,53 S422,48 460,31" fill="none" stroke="#dc7a60" strokeWidth="2.5" /></svg></div></div>
-              <div className="chart-dates"><span>JUN 01</span><span>JUN 08</span><span>JUN 15</span><span>JUN 22</span><span>JUN 30</span></div>
+              <p className="profile-note panel-empty">Win rate trend requires a selected player and a live match sample.</p>
             </section>
           </div>
 
