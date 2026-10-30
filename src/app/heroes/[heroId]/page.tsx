@@ -42,7 +42,7 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
           </div>
         </article>)}</div>}
       </section>
-      <section className="panel hero-abilities"><h2>Items & builds</h2><p>Hero-bound ability assets do not provide recommended item builds; no item recommendations are shown.</p></section>
+      <section className="panel hero-abilities"><h2>Items & builds</h2><p>Browse item performance for this hero or open published community builds.</p><p><Link href={`/items?heroId=${id}`}>Item statistics for {hero.name} ↗</Link> · <Link href={`/builds?heroId=${id}`}>Community builds ↗</Link></p></section>
     </main>
   );
 }
@@ -50,3 +50,4 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
 export default async function Page({ params }: { params: Promise<{ heroId: string }> }) {
   return <AppShell active="Heroes"><Suspense fallback={<main className="content-inner hero-detail"><p className="api-message" role="status">Loading hero data…</p></main>}><HeroContent params={params} /></Suspense></AppShell>;
 }
+

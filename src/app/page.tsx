@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "./components/app-shell";
+import GlobalAnalyticsPanel from "./components/global-analytics-panel";
 
 type Player = { account_id?: number; personaname?: string; avatar?: string; avatarfull?: string; profileurl?: string; matches_played_last_30d?: number };
 type Match = { match_id?: number; hero_id?: number; start_time?: number; match_duration_s?: number; player_kills?: number; player_deaths?: number; player_assists?: number; player_match_outcome?: number };
@@ -122,13 +123,13 @@ export default function Home() {
       <div className="content-inner">
           <div className="page-heading">
             <div><p className="eyebrow">WELCOME BACK, EXPLORER</p><h1>Command center<span>.</span></h1><p className="muted">Track the meta. Read the match. Play with intent.</p></div>
-            <button className="refresh-button">↻ <span>Refresh data</span></button>
+            <button className="refresh-button"><span>Refresh data</span></button>
           </div>
 
           <form id="player-search" className="search-bar" onSubmit={handleSearch}>
-            <span className="search-icon">⌕</span>
+            <span className="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a Steam name or account ID..." aria-label="Search a Steam name or account ID" />
-            <kbd>⌘ K</kbd>
+            <kbd>Ctrl K</kbd>
             <button type="submit" disabled={searching}>{searching ? "Searching..." : "Search"}</button>
           </form>
           {searchError && <p className="api-message error-message" role="alert">{searchError}</p>}
@@ -139,25 +140,7 @@ export default function Home() {
             return <Link className="player-result" href={href} key={player.account_id ?? index}><span className="player-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{player.avatar ? null : (player.personaname?.slice(0, 1) ?? "?")}</span><span className="player-result-info"><strong>{player.personaname || "Unknown Steam player"}</strong><small>Account ID: {player.account_id ?? "Unavailable"}{typeof player.matches_played_last_30d === "number" ? ` · ${player.matches_played_last_30d} matches in last 30 days` : ""}</small></span><span className="row-arrow">↗</span></Link>;
           })}</section>}
 
-          <div className="section-title"><h2>At a glance</h2><span className="preview-tag">PREVIEW DATA</span><span className="line" /></div>
-          <div className="metric-grid">
-            <Metric label="MATCHES ANALYZED" value="—" change="—" note="Connect a player to begin" />
-            <Metric label="ACTIVE PLAYERS" value="—" change="—" note="Global analytics unavailable" />
-            <Metric label="CURRENT WIN RATE" value="—" change="—" note="No live sample selected" />
-            <Metric label="META SHIFT" value="—" change="—" note="No live sample selected" accent />
-          </div>
-
-          <div className="dashboard-grid">
-            <section className="panel hero-panel">
-              <div className="panel-heading"><div><p className="eyebrow">THE META / PATCH 0.4.2</p><h2>Heroes in focus</h2></div><span className="preview-tag">PREVIEW DATA</span></div>
-              <p className="profile-note panel-empty">Global hero analytics will appear here after the analytics endpoint is connected. No placeholder values are shown.</p>
-            </section>
-
-            <section className="panel trend-panel">
-              <div className="panel-heading"><div><p className="eyebrow">PERFORMANCE / 30 DAYS</p><h2>Win rate trend</h2></div><span className="preview-tag">PREVIEW DATA</span></div>
-              <p className="profile-note panel-empty">Win rate trend requires a selected player and a live match sample.</p>
-            </section>
-          </div>
+          <GlobalAnalyticsPanel />
 
           {selectedPlayer && <section className="panel player-profile" aria-label="Player profile">
             <div className="profile-cover" />
@@ -213,10 +196,10 @@ export default function Home() {
   );
 }
 
-function Metric({ label, value, change, note, accent = false }: { label: string; value: string; change: string; note: string; accent?: boolean }) {
-  return <div className={`metric ${accent ? "accent" : ""}`}><p>{label}</p><strong>{value}</strong><div><span>{change}</span> {note}</div></div>;
-}
-
 function ProfileMetric({ label, value, note }: { label: string; value: string; note: string }) {
   return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>;
 }
+
+
+
+

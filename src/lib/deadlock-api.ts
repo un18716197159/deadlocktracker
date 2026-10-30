@@ -163,6 +163,27 @@ export type MatchDetails = {
   match_id?: number; start_time?: number; duration_s?: number; winning_team?: number;
   not_scored?: boolean; players: MatchPlayerDetails[];
 };
+export type MatchListEntry = {
+  match_id: number;
+  start_time?: number;
+  duration_s?: number;
+  winning_team?: 0 | 1;
+  not_scored?: boolean;
+  match_mode?: string;
+  game_mode?: string;
+  average_badge?: number;
+};
+export type MatchListFilters = {
+  heroId?: number;
+  periodDays?: number;
+  minDurationS?: number;
+  maxDurationS?: number;
+  gameMode?: "normal" | "street_brawl";
+  matchMode?: "ranked" | "unranked" | "ranked,unranked" | "unranked,private_lobby,coop_bot,ranked,server_test,tutorial,hero_labs";
+  direction: "asc" | "desc";
+  cursor?: number;
+  limit: number;
+};
 export type MatchItemAsset = { id?: number; name?: string; image?: string | null; image_webp?: string | null; type?: string };
 type RawMatchMetadata = { match_info?: Record<string, unknown> & { players?: Array<Record<string, unknown>> } };
 function optionalNumber(value: unknown): number | undefined {
@@ -186,21 +207,77 @@ export async function getMatchDetails(matchId: string): Promise<MatchDetails> {
     }) : [];
     const snapshots = Array.isArray(player.stats) ? player.stats.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object") : [];
     const latest = snapshots.sort((a, b) => (optionalNumber(a.time_stamp_s) ?? -1) - (optionalNumber(b.time_stamp_s) ?? -1)).at(-1);
+    const finalStats = player.final_stats && typeof player.final_stats === "object" ? player.final_stats as Record<string, unknown> : undefined;
     return [{
-      account_id: accountId, player_slot: optionalNumber(player.player_slot), team: optionalNumber(player.team),
-      hero_id: optionalNumber(player.hero_id), kills: optionalNumber(player.kills), deaths: optionalNumber(player.deaths),
-      assists: optionalNumber(player.assists), net_worth: optionalNumber(player.net_worth), last_hits: optionalNumber(player.last_hits),
-      denies: optionalNumber(player.denies), level: optionalNumber(player.level),
+      account_id: accountId, player_slot: optionalNumber(player.player_slot), team: parseTeam(player.team),
+      hero_id: optionalNumber(player.hero_id), kills: optionalNumber(player.kills) ?? optionalNumber(finalStats?.kills), deaths: optionalNumber(player.deaths) ?? optionalNumber(finalStats?.deaths),
+      assists: optionalNumber(player.assists) ?? optionalNumber(finalStats?.assists), net_worth: optionalNumber(player.net_worth) ?? optionalNumber(finalStats?.net_worth), last_hits: optionalNumber(player.last_hits) ?? optionalNumber(finalStats?.last_hits),
+      denies: optionalNumber(player.denies) ?? optionalNumber(finalStats?.denies), level: optionalNumber(player.level) ?? optionalNumber(player.player_level) ?? optionalNumber(finalStats?.level),
       player_match_outcome: optionalNumber(player.player_match_outcome), items,
-      player_damage: optionalNumber(latest?.player_damage), player_damage_taken: optionalNumber(latest?.player_damage_taken),
-      player_healing: optionalNumber(latest?.player_healing), stats_time_stamp_s: optionalNumber(latest?.time_stamp_s),
+      player_damage: optionalNumber(latest?.player_damage) ?? optionalNumber(finalStats?.player_damage) ?? optionalNumber(player.player_damage),
+      player_damage_taken: optionalNumber(latest?.player_damage_taken) ?? optionalNumber(finalStats?.player_damage_taken) ?? optionalNumber(player.player_damage_taken),
+      player_healing: optionalNumber(latest?.player_healing) ?? optionalNumber(finalStats?.player_healing) ?? optionalNumber(player.player_healing),
+      stats_time_stamp_s: optionalNumber(latest?.time_stamp_s) ?? optionalNumber(finalStats?.time_stamp_s),
     }];
   }) : [];
   return {
-    match_id: optionalNumber(info.match_id), start_time: optionalNumber(info.start_time),
-    duration_s: optionalNumber(info.duration_s), winning_team: optionalNumber(info.winning_team),
+    match_id: optionalNumber(info.match_id), start_time: parseUnixTime(info.start_time),
+    duration_s: optionalNumber(info.duration_s), winning_team: parseTeam(info.winning_team),
     not_scored: typeof info.not_scored === "boolean" ? info.not_scored : undefined, players,
   };
+}
+
+function parseUnixTime(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return undefined;
+  const normalized = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(value) ? `${value.replace(" ", "T")}Z` : value;
+  const parsed = Date.parse(normalized);
+  return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : undefined;
+}
+
+function parseTeam(value: unknown): 0 | 1 | undefined {
+  if (value === 0 || value === "Team0") return 0;
+  if (value === 1 || value === "Team1") return 1;
+  return undefined;
+}
+
+export async function getMatchList(filters: MatchListFilters): Promise<MatchListEntry[]> {
+  const params = new URLSearchParams({
+    include_info: "true",
+    order_by: "match_id",
+    order_direction: filters.direction,
+    limit: String(Math.min(Math.max(filters.limit, 1), 100)),
+  });
+  if (filters.heroId !== undefined) params.set("hero_ids", String(filters.heroId));
+  if (filters.periodDays !== undefined) params.set("min_unix_timestamp", String(Math.floor(Date.now() / 1000) - filters.periodDays * 86400));
+  if (filters.minDurationS !== undefined) params.set("min_duration_s", String(filters.minDurationS));
+  if (filters.maxDurationS !== undefined) params.set("max_duration_s", String(filters.maxDurationS));
+  if (filters.gameMode) params.set("game_mode", filters.gameMode);
+  params.set("match_mode", filters.matchMode ?? "unranked,private_lobby,coop_bot,ranked,server_test,tutorial,hero_labs");
+  if (filters.cursor !== undefined) {
+    params.set(filters.direction === "desc" ? "max_match_id" : "min_match_id", String(filters.cursor));
+  }
+
+  const payload = await request<unknown>(`/v1/matches/metadata?${params}`, 30_000);
+  if (!Array.isArray(payload)) throw new DeadlockApiError("Deadlock API returned an invalid match list.", 502);
+  return payload.flatMap((entry): MatchListEntry[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as Record<string, unknown>;
+    const matchId = optionalNumber(row.match_id);
+    if (matchId === undefined || !Number.isSafeInteger(matchId)) return [];
+    const winningTeam = parseTeam(row.winning_team);
+    const averageBadge = optionalNumber(row.average_badge);
+    return [{
+      match_id: matchId,
+      start_time: parseUnixTime(row.start_time),
+      duration_s: optionalNumber(row.duration_s),
+      winning_team: winningTeam,
+      not_scored: typeof row.not_scored === "boolean" ? row.not_scored : undefined,
+      match_mode: typeof row.match_mode === "string" ? row.match_mode : undefined,
+      game_mode: typeof row.game_mode === "string" ? row.game_mode : undefined,
+      average_badge: averageBadge,
+    }];
+  });
 }
 export async function getSteamProfiles(accountIds: number[]): Promise<SteamProfile[]> {
   const ids = [...new Set(accountIds.filter((id) => Number.isSafeInteger(id) && id >= 0))];

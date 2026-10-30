@@ -1,4 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
@@ -50,6 +51,7 @@ function outcome(value: number | undefined) {
 }
 
 async function PlayerContent({ accountId }: { accountId: number }) {
+  await connection();
   const [profileResult, historyResult, rankResult, heroStatsResult, heroesResult, ranksResult] = await Promise.allSettled([
     getSteamProfiles([accountId]),
     getMatchHistory(accountId),
@@ -80,7 +82,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
   const historyError = historyResult.status === "rejected";
 
   return <main className="content-inner player-page">
-    <Link className="back-link" href="/#player-search">← Search another player</Link>
+    <Link className="back-link" href="/#player-search">Back to player search</Link>
     <div className="page-heading">
       <div><p className="eyebrow">PLAYER PROFILE / LIVE API DATA</p><h1>{profile?.personaname || `Account ${accountId}`}<span>.</span></h1><p className="muted">A current view of the player data returned by Deadlock API.</p></div>
       {profile?.profileurl && <a className="refresh-button" href={profile.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a>}
@@ -136,3 +138,6 @@ async function PlayerPageContent({ params }: Props) {
 export default function PlayerPage({ params }: Props) {
   return <AppShell active="Players"><Suspense fallback={<main className="content-inner player-page"><p className="api-message" role="status">Loading player profile…</p></main>}><PlayerPageContent params={params} /></Suspense></AppShell>;
 }
+
+
+
