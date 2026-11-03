@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppShell from "./components/app-shell";
 import GlobalAnalyticsPanel from "./components/global-analytics-panel";
+import RankBadge from "./components/rank-badge";
 
 type Player = { account_id?: number; personaname?: string; avatar?: string; avatarfull?: string; profileurl?: string; matches_played_last_30d?: number };
 type Match = { match_id?: number; hero_id?: number; start_time?: number; match_duration_s?: number; player_kills?: number; player_deaths?: number; player_assists?: number; player_match_outcome?: number };
@@ -182,7 +183,7 @@ export default function Home() {
             <div className="profile-identity">
               <span className="profile-avatar" aria-hidden="true" style={(selectedPlayer.avatarfull || selectedPlayer.avatar) ? { backgroundImage: `url("${selectedPlayer.avatarfull || selectedPlayer.avatar}")` } : undefined}>{(selectedPlayer.avatarfull || selectedPlayer.avatar) ? null : selectedPlayer.personaname?.slice(0, 1) || "?"}</span>
               <div className="profile-name"><p className="eyebrow">PLAYER PROFILE</p><h2>{selectedPlayer.personaname || "Unknown Steam player"}</h2><span>Account ID {selectedPlayer.account_id ?? "Unavailable"}{selectedPlayer.profileurl && <> · <a href={selectedPlayer.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a></>}</span></div>
-            <div className="profile-rank"><small>CURRENT RANK</small><strong>{loadingMatches ? "Loading rank…" : rankAvailable && rank?.rank === 0 ? "Obscurus · Unranked" : rankAvailable && typeof rank?.rank === "number" ? `${rankNames[String(rank.rank)] || `Tier ${rank.rank}`}${typeof rank.subrank === "number" && rank.subrank > 0 ? ` ${rank.subrank}` : ""}` : "Rank unavailable"}</strong></div>
+            <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display">{!loadingMatches && rankAvailable && typeof rank?.rank === "number" && rank.rank > 0 && <RankBadge tier={rank.rank} subrank={rank.subrank} name={rankNames[String(rank.rank)]} size="sm" />}<strong>{loadingMatches ? "Loading rank…" : rankAvailable && rank?.rank === 0 ? "Obscurus · Unranked" : rankAvailable && typeof rank?.rank === "number" ? `${rankNames[String(rank.rank)] || `Tier ${rank.rank}`}${typeof rank.subrank === "number" && rank.subrank > 0 ? ` ${rank.subrank}` : ""}` : "Rank unavailable"}</strong></div></div>
             </div>
             {loadingMatches && <p className="profile-note" role="status">Loading match history and player statistics…</p>}
             {matchError && <p className="profile-note error-message" role="alert">Player statistics could not be loaded. {matchError}</p>}
@@ -194,7 +195,7 @@ export default function Home() {
             </div>}
             {!loadingMatches && !matchError && matches.length > 0 && resultMatches.length === 0 && <p className="profile-note">History loaded, but it contains no matches with a scored win or loss. Win rate and K/D/A are unavailable.</p>}
             <div className="hero-stats-block">
-              <div className="panel-heading"><div><p className="eyebrow">PLAYER PERFORMANCE</p><h2>Hero statistics</h2></div><span className="live-tag">AGGREGATED · NORMAL MODE</span></div>
+              <div className="panel-heading"><div><p className="eyebrow">PLAYER PERFORMANCE</p><h2>Hero statistics</h2></div></div>
               {!loadingMatches && !matchError && playerHeroStats.length > 0 && <p className="profile-note">Per-hero totals come from the API aggregate and may cover a different sample than the loaded match history above.</p>}
               {loadingMatches ? null : matchError ? null : !heroStatsAvailable ? <p className="profile-note">Per-hero statistics could not be loaded from the API.</p> : playerHeroStats.length === 0 ? <p className="profile-note">The API returned no per-hero statistics for this account.</p> : <div className="player-hero-grid">{playerHeroStats.filter((stats) => typeof stats.hero_id === "number" && typeof stats.matches_played === "number" && stats.matches_played > 0).sort((a, b) => (b.matches_played ?? 0) - (a.matches_played ?? 0)).map((stats) => {
                 const id = String(stats.hero_id);
@@ -207,7 +208,7 @@ export default function Home() {
           </section>}
 
           <section id="matches" className="panel matches-panel">
-            <div className="panel-heading"><div><p className="eyebrow">PLAYER ACTIVITY</p><h2>{selectedPlayer ? `${selectedPlayer.personaname || "Selected player"} · Recent matches` : "Recent matches"}</h2></div>{selectedPlayer && <span className="live-tag">LIVE PLAYER DATA</span>}</div>
+            <div className="panel-heading"><div><p className="eyebrow">PLAYER ACTIVITY</p><h2>{selectedPlayer ? `${selectedPlayer.personaname || "Selected player"} · Recent matches` : "Recent matches"}</h2></div></div>
             {!selectedPlayer && <p className="empty-history">Search for a player and select a profile to load match history.</p>}
             {selectedPlayer && <div className="selected-player"><span className="eyebrow">SELECTED STEAM PROFILE</span><strong>{selectedPlayer.personaname || "Unknown Steam player"}</strong><small>Account ID: {selectedPlayer.account_id ?? "Unavailable"}</small>{typeof selectedPlayer.matches_played_last_30d === "number" && <small>{selectedPlayer.matches_played_last_30d} matches in the last 30 days</small>}{selectedPlayer.profileurl && <a href={selectedPlayer.profileurl} target="_blank" rel="noreferrer">View Steam profile ↗</a>}</div>}
             {selectedPlayer && loadingMatches && <p className="api-message" role="status">Loading match history...</p>}
@@ -225,7 +226,7 @@ export default function Home() {
               return Number.isSafeInteger(match.match_id) ? <Link className="match-row match-row-link" href={"/matches/" + match.match_id + "?account_id=" + selectedPlayer.account_id} key={match.match_id}>{rowContents}</Link> : <div className="match-row" key={String(match.start_time ?? "match") + "-" + index}>{rowContents}</div>;
             })}</div>}
           </section>
-          <footer><span>DEADLOCK INTELLIGENCE <b>·</b> DATA WITH INTENT</span><span>Data supplied by Deadlock API <i /></span></footer>
+          <footer>DEADLOCK INTELLIGENCE <b>·</b> DATA WITH INTENT</footer>
         </div>
     </AppShell>
   );
@@ -234,7 +235,4 @@ export default function Home() {
 function ProfileMetric({ label, value, note }: { label: string; value: string; note: string }) {
   return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>;
 }
-
-
-
 

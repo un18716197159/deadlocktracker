@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { HeroAsset, LeaderboardPlayer, LeaderboardRegion, RankedSeasonAsset } from "../../lib/deadlock-api";
+import RankBadge from "../components/rank-badge";
 
 type Props = { heroes: HeroAsset[]; seasons: RankedSeasonAsset[]; assetsUnavailable: boolean };
 type Payload = { players: LeaderboardPlayer[]; region: string; apiLimit: number; error?: string };
@@ -57,7 +58,7 @@ export default function Leaderboards({ heroes, seasons, assetsUnavailable }: Pro
   const heroName = (id: number) => heroes.find((hero) => hero.id === id)?.name || `Hero ${id}`;
 
   return <main className="content-inner leaderboard-page">
-    <div className="page-heading"><div><p className="eyebrow">VALVE LEADERBOARD / LIVE API DATA</p><h1>Leaderboards<span>.</span></h1><p className="muted">Official regional standings with player statistics where the API resolves an account unambiguously.</p></div><Link className="refresh-button" href="/compare">Compare players ↗</Link></div>
+    <div className="page-heading"><div><p className="eyebrow">VALVE LEADERBOARD</p><h1>Leaderboards<span>.</span></h1><p className="muted">Official regional standings with player statistics where the API resolves an account unambiguously.</p></div><Link className="refresh-button" href="/compare">Compare players ↗</Link></div>
     <div className="leaderboard-filters">
       <label><span>REGION</span><select value={region} onChange={(event) => refreshFilter(() => setRegion(event.target.value as LeaderboardRegion))}>{regions.map((entry) => <option value={entry.value} key={entry.value}>{entry.label}</option>)}</select></label>
       <label><span>HERO</span><select value={heroId} onChange={(event) => refreshFilter(() => setHeroId(event.target.value))}><option value="all">All heroes</option>{heroes.map((hero) => typeof hero.id === "number" ? <option value={hero.id} key={hero.id}>{hero.name || `Hero ${hero.id}`}</option> : null)}</select></label>
@@ -77,12 +78,12 @@ export default function Leaderboards({ heroes, seasons, assetsUnavailable }: Pro
         {pageRows.map((player, index) => <div className={`leaderboard-row ${player.place <= 3 ? `leaderboard-top-${player.place}` : ""}`} key={`${player.place}-${player.name}-${index}`}>
           <strong className="leaderboard-place">#{player.place}</strong>
           <span className="leaderboard-player-cell">{player.accountId !== null ? <Link href={`/players/${player.accountId}`} className="leaderboard-player"><span className="leaderboard-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{!player.avatar && player.name.slice(0, 1)}</span><b>{player.name}</b></Link> : <span className="leaderboard-player"><span className="leaderboard-avatar" aria-hidden="true">{player.name.slice(0, 1)}</span><b>{player.name}</b></span>}</span>
-          <span>{player.rank || "—"}</span><span>{format(player.stats?.matches)}</span><span>{player.stats?.wins === null || player.stats?.wins === undefined ? "—" : `${format(player.stats.wins)} / ${format(player.stats.losses)}`}</span><span>{percent(player.stats?.winRate)}</span><span>{player.stats ? [player.stats.kills, player.stats.deaths, player.stats.assists].map((value) => value === null ? "—" : value.toFixed(1)).join(" / ") : "—"}</span>
+          <span className="leaderboard-rank-cell">{player.rankTier !== null && player.rankTier !== undefined ? <RankBadge tier={player.rankTier} subrank={player.rankSubrank} name={player.rank} size="sm" /> : null}<span>{player.rank || "—"}</span></span><span>{format(player.stats?.matches)}</span><span>{player.stats?.wins === null || player.stats?.wins === undefined ? "—" : `${format(player.stats.wins)} / ${format(player.stats.losses)}`}</span><span>{percent(player.stats?.winRate)}</span><span>{player.stats ? [player.stats.kills, player.stats.deaths, player.stats.assists].map((value) => value === null ? "—" : value.toFixed(1)).join(" / ") : "—"}</span>
           <span className="leaderboard-top-heroes">{player.topHeroIds.length ? player.topHeroIds.slice(0, 3).map((id) => <Link href={`/heroes/${id}`} title={heroName(id)} key={id}>{heroName(id)}</Link>) : "—"}</span>
         </div>)}
       </div></div> : <p className="api-message">No leaderboard entries match this search.</p>}
       {pageCount > 1 && <div className="leaderboard-pagination"><button type="button" className="refresh-button" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Previous</button><span>Page {page + 1} of {pageCount}</span><button type="button" className="refresh-button" disabled={page >= pageCount - 1} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}>Next</button></div>}
     </>}
-    <footer><span>DEADLOCK INTELLIGENCE · LEADERBOARDS</span><span>Source: Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · LEADERBOARDS</footer>
   </main>;
 }

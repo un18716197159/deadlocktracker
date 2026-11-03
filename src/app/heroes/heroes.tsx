@@ -37,7 +37,7 @@ export default function Heroes({ rows }: { rows: Row[] }) {
   const update = (key: keyof Filters, value: string) => { setLoading(true); setError(""); setFilters((current) => ({ ...current, [key]: value, ...(key === "gameMode" && value === "street_brawl" ? { rating: "all" } : {}) })); };
   const periodLabel = filters.period === "all" ? "all available history" : "last " + filters.period.replace("d", " days");
   return <main className="content-inner heroes-page">
-    <div className="page-heading"><div><p className="eyebrow">ROSTER / LIVE API DATA</p><h1>Heroes<span>.</span></h1><p className="muted">Deadlock hero performance · {periodLabel}</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">ROSTER</p><h1>Heroes<span>.</span></h1><p className="muted">Deadlock hero performance · {periodLabel}</p></div></div>
     <div className="heroes-toolbar">
       <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search heroes or roles..." aria-label="Search heroes" />
       <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort heroes"><option value="name">Name</option><option value="win">Win rate</option><option value="pick">Pick rate</option></select>
@@ -49,15 +49,15 @@ export default function Heroes({ rows }: { rows: Row[] }) {
     <p className="heroes-context">Win rate = wins ÷ (wins + losses). Pick rate = hero picks ÷ the API reported match denominator, adjusted from the hero&apos;s first recorded day.</p>
     {loading && <div className="heroes-grid hero-skeleton-grid" role="status" aria-label="Loading hero statistics" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <article className="hero-card hero-skeleton" key={index}><div className="hero-card-art" /><div className="hero-card-body"><span /><span /><span /></div></article>)}</div>}
     {error && <p className="api-message error-message" role="alert">Deadlock API unavailable. {error}</p>}
-    {!loading && !error && decorated.length > 0 && stats.length > 0 && <div className="heroes-grid">{decorated.map(({ hero, stat, win, pick }, index) => {
+    {!loading && !error && decorated.length > 0 && <div className="heroes-grid">{decorated.map(({ hero, stat, win, pick }, index) => {
       const img = hero.images?.background_image_webp || hero.images?.background_image || hero.images?.hero_card_critical;
       return <Link className="hero-card" href={"/heroes/" + hero.id} key={hero.id}><div className="hero-card-art" role="img" aria-label={hero.name} style={img ? { backgroundImage: 'linear-gradient(0deg,#111d,transparent),url("' + img + '")' } : {}}><span>{index + 1}</span></div><div className="hero-card-body"><p className="eyebrow">{hero.description?.role || "DEADLOCK HERO"} · ID {hero.id}</p><h2>{hero.name}</h2>{hero.description?.playstyle && <p className="hero-playstyle">{hero.description.playstyle}</p>}<div className="hero-card-stats"><div><small>WIN RATE</small><strong>{win === null ? "—" : win.toFixed(1) + "%"}</strong></div><div><small>PICK RATE</small><strong>{pick === null ? "—" : pick.toFixed(1) + "%"}</strong></div><div><small>MATCHES</small><strong>{stat?.matches.toLocaleString() ?? "—"}</strong></div></div>{stat && <p className="hero-playstyle">W / L {stat.wins.toLocaleString()} / {stat.losses.toLocaleString()} · Avg K/D/A {stat.matches ? (stat.total_kills / stat.matches).toFixed(1) : "—"} / {stat.matches ? (stat.total_deaths / stat.matches).toFixed(1) : "—"} / {stat.matches ? (stat.total_assists / stat.matches).toFixed(1) : "—"}</p>}<span className="hero-card-link">VIEW HERO ↗</span></div></Link>;
     })}</div>}
-    {!loading && !error && (decorated.length === 0 || stats.length === 0) && <section className="panel heroes-state"><h2>{stats.length === 0 ? "No hero statistics available" : "No matching heroes"}</h2><p className="api-message">{stats.length === 0 ? "The API returned no hero statistics for the selected period and filters." : "No heroes match this search."}</p></section>}
+    {!loading && !error && stats.length === 0 && decorated.length > 0 && <p className="heroes-context" role="status">No performance statistics were returned for these filters. Hero assets and detail pages remain available.</p>}
+    {!loading && !error && decorated.length === 0 && <section className="panel heroes-state"><h2>No matching heroes</h2><p className="api-message">No heroes match this search in the available catalog.</p></section>}
     <footer>DEADLOCK INTELLIGENCE · HEROES</footer>
   </main>;
 }
-
 
 
 

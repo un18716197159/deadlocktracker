@@ -48,7 +48,7 @@ export type OfficialLeaderboardEntry = { account_name: string; possible_account_
 export type RankedSeasonAsset = { class_name: string; name: string; intervals: Array<{ interval: number; start_timestamp: number; end_timestamp: number; leaderboard_id: number }> };
 export type PlayerScoreboardMetric = { rank: number; account_id: number; value: number; matches: number };
 export type LeaderboardPlayerStats = { matches: number | null; wins: number | null; losses: number | null; winRate: number | null; kills: number | null; deaths: number | null; assists: number | null };
-export type LeaderboardPlayer = { place: number; name: string; accountId: number | null; avatar: string | null; rank: string | null; topHeroIds: number[]; stats: LeaderboardPlayerStats | null };
+export type LeaderboardPlayer = { place: number; name: string; accountId: number | null; avatar: string | null; rank: string | null; rankTier: number | null; rankSubrank: number | null; topHeroIds: number[]; stats: LeaderboardPlayerStats | null };
 
 export class DeadlockApiError extends Error {
   constructor(message: string, public status: number, public retryAfter?: string) {
@@ -383,6 +383,6 @@ export async function getLeaderboardPlayers(options: { region: LeaderboardRegion
     const profile = accountId === null ? undefined : profilesById.get(accountId);
     const currentRank = accountId === null ? undefined : ranksById.get(accountId);
     const rankName = typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.name || `Tier ${currentRank.rank}` : null;
-    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
+    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, rankTier: typeof currentRank?.rank === "number" ? currentRank.rank : null, rankSubrank: typeof currentRank?.subrank === "number" ? currentRank.subrank : null, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
   });
 }

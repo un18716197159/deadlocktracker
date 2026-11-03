@@ -63,7 +63,7 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
   const phase = (column: number) => filters.gameMode === "street_brawl" ? `Round ${column + 1} → ${column + 2}` : ["0–9 min → 9–20 min", "9–20 min → 20–30 min", "20–30 min → 30+ min"][column] ?? `Phase ${column + 1} → ${column + 2}`;
 
   return <main className="content-inner items-page">
-    <div className="page-heading"><div><p className="eyebrow">ITEM DATABASE / LIVE API DATA</p><h1>Items<span>.</span></h1><p className="muted">Browse shop assets and compare purchases across real match data.</p></div><Link className="refresh-button" href="/builds">Community builds ↗</Link></div>
+    <div className="page-heading"><div><p className="eyebrow">ITEM DATABASE</p><h1>Items<span>.</span></h1><p className="muted">Browse shop assets and compare purchases across real match data.</p></div><Link className="refresh-button" href="/builds">Community builds ↗</Link></div>
     <div className="items-filters">
       <label className="items-search"><span>SEARCH ITEMS</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Item name…" aria-label="Search items" /></label>
       <label><span>CATEGORY</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All item categories</option><option value="weapon">Weapon</option><option value="spirit">Spirit</option><option value="vitality">Vitality</option></select></label>
@@ -90,14 +90,14 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
     })}</div>}
     {!loading && !error && filteredAssets.length === 0 && <p className="api-message">No items match this search and category.</p>}
     {!loading && analytics && <p className="items-data-note">Pick rate = item player-matches / player-matches across the selected hero sample ({num(analytics.playerMatches)}). Win rate = wins / (wins + losses). Missing item rows mean the API returned no purchase sample.</p>}
-    <section className="panel item-flow-panel"><div className="panel-heading"><div><p className="eyebrow">MATCH PURCHASE HISTORY</p><h2>Observed item transitions</h2></div><span className="live-tag">API ITEM FLOW</span></div>
+    <section className="panel item-flow-panel"><div className="panel-heading"><div><p className="eyebrow">MATCH PURCHASE HISTORY</p><h2>Observed item transitions</h2></div></div>
       <p className="item-flow-intro">These transitions aggregate real players who bought items across adjacent match phases; they are not prescriptive builds.</p>
       {flowLoading && <p className="profile-note" role="status">Loading item flow…</p>}{flowError && <p className="profile-note error-message" role="alert">Item flow unavailable. {flowError}</p>}
       {!flowLoading && !flowError && flow.length > 0 && <div className="item-flow-list">{flow.map((entry, index) => <div className="item-flow-row" key={`${entry.fromItem?.id}-${entry.toItem?.id}-${entry.fromColumn}-${index}`}><span className="item-flow-phase">{phase(entry.fromColumn)}</span><span className="item-flow-transition"><Link href={entry.fromItem ? `/items/${entry.fromItem.id}` : "/items"}>{entry.fromItem?.name || "Item unavailable"}</Link><b aria-hidden="true">→</b><Link href={entry.toItem ? `/items/${entry.toItem.id}` : "/items"}>{entry.toItem?.name || "Item unavailable"}</Link></span><span className="item-flow-count">{num(entry.matches)} player matches <small>{pct(entry.winRate)} win rate</small></span></div>)}</div>}
       {!flowLoading && !flowError && flow.length === 0 && <p className="profile-note">No item transitions were returned for these filters.</p>}
     </section>
     <div className="items-footer-links"><Link href="/heroes">Explore hero analytics ↗</Link><Link href="/matches">Explore matches ↗</Link></div>
-    <footer><span>DEADLOCK INTELLIGENCE · ITEM DATA</span><span>Source: Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · ITEM DATA</footer>
   </main>;
 }
 

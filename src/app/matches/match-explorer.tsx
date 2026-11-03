@@ -13,7 +13,7 @@ function duration(value?: number) {
 
 export default function MatchExplorer({ rows, heroes, filters, matchError, invalidMatchId, nextHref }: Props) {
   return <main className="content-inner match-explorer-page">
-    <div className="page-heading"><div><p className="eyebrow">MATCH DATABASE / LIVE API DATA</p><h1>Match Explorer<span>.</span></h1><p className="muted">Browse the global match feed or open a match directly by ID.</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">MATCH DATABASE</p><h1>Match Explorer<span>.</span></h1><p className="muted">Browse the global match feed or open a match directly by ID.</p></div></div>
     <form className="match-id-search" action="/matches" method="get">
       <label htmlFor="match-id">MATCH ID</label><input id="match-id" name="match_id" inputMode="numeric" pattern="[0-9]+" placeholder="Enter a match ID" />
       <button type="submit" className="refresh-button">Open match</button>
@@ -48,8 +48,6 @@ export default function MatchExplorer({ rows, heroes, filters, matchError, inval
     </>}
     {!matchError && rows.length === 0 && <section className="panel match-empty"><h2>No matches found</h2><p>The API returned no matches for these filters. Try a wider time period or remove a filter.</p></section>}
     {heroes.length === 0 && <p className="match-explorer-note">Hero names are unavailable from the assets endpoint; match search and ID lookup remain available.</p>}
-    <footer><span>DEADLOCK INTELLIGENCE · MATCH EXPLORER</span><span>Global match metadata from Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · MATCH EXPLORER</footer>
   </main>;
 }
-
-

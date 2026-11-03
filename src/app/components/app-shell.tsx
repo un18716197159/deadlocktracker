@@ -30,19 +30,20 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 export default function AppShell({ active, children }: { active: string; children: ReactNode }) {
-  const primary = navigation.slice(0, 2);
+  const overview = navigation.slice(0, 1);
+  const players = navigation.slice(1, 2);
   const analysis = navigation.slice(2);
   const links = (items: NavigationItem[], className = "") => items.map(({ icon, name, href }) => <Link key={name} href={href} aria-current={active === name ? "page" : undefined} aria-label={name} title={name} className={`nav-item ${active === name ? "active" : ""} ${className}`}><NavIcon name={icon} /><span>{name}</span></Link>);
   return <div className="app-shell">
     <aside className="sidebar">
       <Link href="/" className="brand" aria-label="Deadlock Intelligence home"><div className="brand-mark"><span>D</span><i /><span>I</span></div><div><strong>DEADLOCK</strong><small>INTELLIGENCE</small></div></Link>
       <nav className="nav-list" aria-label="Main navigation">
-        <div className="nav-group"><p className="workspace-label">DISCOVER</p>{links(primary)}</div>
+        <div className="nav-group"><p className="workspace-label">OVERVIEW</p>{links(overview)}</div>
+        <div className="nav-group"><p className="workspace-label">PLAYER DATA</p>{links(players)}</div>
         <div className="nav-group"><p className="workspace-label">INTELLIGENCE</p>{links(analysis)}</div>
       </nav>
-      <div className="sidebar-bottom"><div className="source-card"><span className="source-mark" aria-hidden="true"><i /></span><span><small>DATA SOURCE</small><strong>Deadlock API</strong></span></div><div className="sidebar-footnote">MATCH INTELLIGENCE<br />BUILT FOR THE STREET</div></div>
     </aside>
-    <section className="content"><header className="topbar"><div className="breadcrumb"><span>DEADLOCK INTELLIGENCE</span><b>/</b>{active.toUpperCase()}</div><div className="topbar-meta"><span className="api-status"><i /> DATA VIA <b>DEADLOCK API</b></span></div></header>{children}</section>
+    <section className="content"><header className="topbar"><div className="breadcrumb"><span>DEADLOCK INTELLIGENCE</span><b>/</b>{active.toUpperCase()}</div></header>{children}</section>
     <nav className="mobile-nav" aria-label="Mobile navigation">{navigation.map(({ icon, name, href }) => <Link key={name} href={href} aria-current={active === name ? "page" : undefined} aria-label={name} title={name} className={`mobile-nav-item ${active === name ? "active" : ""}`}><NavIcon name={icon} /><span>{name}</span></Link>)}</nav>
   </div>;
 }

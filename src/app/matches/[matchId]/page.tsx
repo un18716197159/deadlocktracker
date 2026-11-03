@@ -28,7 +28,7 @@ async function Content({ params, searchParams }: Props) {
   const winner = match.not_scored ? undefined : match.winning_team === 0 || match.winning_team === 1 ? match.winning_team : undefined;
   return <main className="content-inner match-detail">
     <Link className="match-back-link" href={accountId ? "/players/" + accountId : "/matches"}>{accountId ? "← Back to player profile" : "← Match Explorer"}</Link>
-    <div className="page-heading match-heading"><div><p className="eyebrow">MATCH DETAILS / LIVE API DATA</p><h1>Match <span>#{match.match_id ?? matchId}</span></h1><p className="muted">Played {match.start_time === undefined ? "Unavailable" : new Date(match.start_time * 1000).toLocaleString()} · {fmtDuration(match.duration_s)}</p></div><span className="match-result-tag">{winner === undefined ? match.not_scored ? "NOT SCORED" : "RESULT UNAVAILABLE" : `TEAM ${winner + 1} VICTORY`}</span></div>
+    <div className="page-heading match-heading"><div><p className="eyebrow">MATCH DETAILS</p><h1>Match <span>#{match.match_id ?? matchId}</span></h1><p className="muted">Played {match.start_time === undefined ? "Unavailable" : new Date(match.start_time * 1000).toLocaleString()} · {fmtDuration(match.duration_s)}</p></div><span className="match-result-tag">{winner === undefined ? match.not_scored ? "NOT SCORED" : "RESULT UNAVAILABLE" : `TEAM ${winner + 1} VICTORY`}</span></div>
     {!match.players.length ? <section className="panel match-empty"><h2>Player data unavailable</h2><p>No player rows were returned in match metadata.</p></section> : <div className="match-teams">{[0, 1].map((team) => {
       const roster = match.players.filter((player) => player.team === team).sort((a, b) => (a.player_slot ?? 99) - (b.player_slot ?? 99));
       return <section className={`panel match-team ${winner === team ? "winning-team" : ""}`} key={team}>
@@ -53,14 +53,12 @@ async function Content({ params, searchParams }: Props) {
     {heroResult.status === "rejected" && <p className="match-data-note">Hero assets unavailable; hero IDs are shown where available.</p>}
     {itemResult.status === "rejected" && <p className="match-data-note">Item assets unavailable; item IDs are shown where available.</p>}
     {profileResult.status === "rejected" && <p className="match-data-note">Steam names unavailable; account IDs are shown.</p>}
-    <footer><span>DEADLOCK INTELLIGENCE · MATCH DATA</span><span>Metadata from Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · MATCH DATA</footer>
   </main>;
 }
 export default function MatchPage(props: Props) {
   return <AppShell active="Matches"><Suspense fallback={<main className="content-inner match-detail"><p className="api-message" role="status">Loading match metadata…</p></main>}><Content {...props} /></Suspense></AppShell>;
 }
-
-
 
 
 

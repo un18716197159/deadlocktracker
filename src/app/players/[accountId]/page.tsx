@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
+import RankBadge from "../../components/rank-badge";
 import {
   getHeroes,
   getMatchHistory,
@@ -84,7 +85,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
   return <main className="content-inner player-page">
     <Link className="back-link" href="/#player-search">Back to player search</Link>
     <div className="page-heading">
-      <div><p className="eyebrow">PLAYER PROFILE / LIVE API DATA</p><h1>{profile?.personaname || `Account ${accountId}`}<span>.</span></h1><p className="muted">A current view of the player data returned by Deadlock API.</p></div>
+      <div><p className="eyebrow">PLAYER PROFILE</p><h1>{profile?.personaname || `Account ${accountId}`}<span>.</span></h1><p className="muted">Match history, hero performance, and competitive rank.</p></div>
       <div className="player-page-actions"><Link className="refresh-button" href={`/compare?left=${accountId}`}>Compare player ↗</Link>{profile?.profileurl && <a className="refresh-button" href={profile.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a>}</div>
     </div>
 
@@ -93,7 +94,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
       <div className="profile-identity">
         <span className="profile-avatar" aria-hidden="true" style={profile?.avatarfull || profile?.avatar ? { backgroundImage: `url("${profile.avatarfull || profile.avatar}")` } : undefined}>{profile?.avatarfull || profile?.avatar ? null : (profile?.personaname?.slice(0, 1) || "?")}</span>
         <div className="profile-name"><p className="eyebrow">STEAM PROFILE</p><h2>{profile?.personaname || "Name unavailable"}</h2><span>Account ID {accountId}{profile?.profileurl && <> · <a href={profile.profileurl} target="_blank" rel="noreferrer">Open Steam profile</a></>}</span></div>
-        <div className="profile-rank"><small>CURRENT RANK</small><strong>{rankName || (typeof rank?.rank === "number" ? `Tier ${rank.rank}` : "Unavailable")}</strong><span>{typeof rank?.subrank === "number" ? `Subrank ${rank.subrank}` : "Rank data was not returned"}</span></div>
+        <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display"><RankBadge tier={rank?.rank} subrank={rank?.subrank} name={rankName} size="lg" /><span className="rank-display-copy"><strong>{rankName || (typeof rank?.rank === "number" ? `Tier ${rank.rank}` : "Unavailable")}</strong><small>{typeof rank?.subrank === "number" ? `Division ${rank.subrank}` : "Rank data was not returned"}</small></span></div></div>
       </div>
       {historyError ? <p className="profile-note error-message">Match history is temporarily unavailable. The API did not return a usable response.</p> : <div className="profile-metrics">
         <div className="profile-metric"><small>MATCHES</small><strong>{formatNumber(matches.length)}</strong><span>Returned by match history</span></div>
@@ -104,15 +105,15 @@ async function PlayerContent({ accountId }: { accountId: number }) {
     </section>
 
     <section className="panel hero-stats-block">
-      <div className="panel-heading"><div><p className="eyebrow">PLAYER PERFORMANCE</p><h2>Hero statistics</h2></div><span className="live-tag">LIVE API DATA</span></div>
+      <div className="panel-heading"><div><p className="eyebrow">PLAYER PERFORMANCE</p><h2>Hero statistics</h2></div></div>
       {heroStatsResult.status === "rejected" ? <p className="profile-note">Per-hero statistics are unavailable from the API right now.</p> : heroStats.length === 0 ? <p className="profile-note">The API returned no per-hero statistics for this account.</p> : <div className="player-hero-grid">{heroStats.filter((stats) => typeof stats.hero_id === "number" && typeof stats.matches_played === "number" && stats.matches_played > 0).sort((a, b) => (b.matches_played ?? 0) - (a.matches_played ?? 0)).map((stats) => <PlayerHeroCard key={stats.hero_id} stats={stats} name={heroNames[String(stats.hero_id)] || `Unknown hero (${stats.hero_id})`} image={heroImages[String(stats.hero_id)]} />)}</div>}
     </section>
 
     <section className="panel matches-panel">
-      <div className="panel-heading"><div><p className="eyebrow">PLAYER ACTIVITY</p><h2>Recent matches</h2></div><span className="live-tag">LIVE API DATA</span></div>
+      <div className="panel-heading"><div><p className="eyebrow">PLAYER ACTIVITY</p><h2>Recent matches</h2></div></div>
       {historyError ? <p className="profile-note">No match rows can be displayed until the API responds successfully.</p> : !matches.length ? <p className="empty-history">No match history is available for this player.</p> : <div className="match-table"><div className="table-head"><span>RESULT</span><span>HERO</span><span>DURATION</span><span>K / D / A</span><span>PLAYED</span><span /></div>{matches.map((match, index) => <MatchRow accountId={accountId} match={match} heroName={typeof match.hero_id === "number" ? heroNames[String(match.hero_id)] || `Unknown hero (${match.hero_id})` : "Unknown hero"} key={match.match_id ?? `${match.start_time}-${index}`} />)}</div>}
     </section>
-    <footer><span>DEADLOCK INTELLIGENCE · PLAYER DATA</span><span>Source: Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · PLAYER DATA</footer>
   </main>;
 }
 
@@ -138,6 +139,4 @@ async function PlayerPageContent({ params }: Props) {
 export default function PlayerPage({ params }: Props) {
   return <AppShell active="Players"><Suspense fallback={<main className="content-inner player-page"><p className="api-message" role="status">Loading player profile…</p></main>}><PlayerPageContent params={params} /></Suspense></AppShell>;
 }
-
-
 

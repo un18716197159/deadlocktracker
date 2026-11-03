@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { SteamProfile } from "../../lib/deadlock-api";
+import RankBadge from "../components/rank-badge";
 
 type HeroSummary = { heroId: number; name: string; image: string | null; matches: number; wins: number; losses: number; winRate: number; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null };
 type ComparedPlayer = { accountId: number; name: string; avatar: string | null; rankName: string | null; rankTier: number | null; subrank: number | null; matches: number; wins: number; losses: number; winRate: number | null; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null; heroes: HeroSummary[] };
@@ -46,7 +47,7 @@ export default function Compare({ initialLeft, initialRight }: { initialLeft: St
     {loading && <div className="compare-skeleton" role="status" aria-label="Loading comparison" aria-busy="true"><div /><div /><div /><div /></div>}
     {error && <p className="api-message error-message" role="alert">Comparison unavailable. {error}</p>}
     {!loading && !error && data && <>
-      <section className="panel compare-summary"><div className="compare-player-heading">{data.players.map((player) => <div className="compare-player-card" key={player.accountId}><span className="compare-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{!player.avatar && player.name.slice(0, 1)}</span><div><p className="eyebrow">ACCOUNT {player.accountId}</p><h2>{player.name}</h2><p>{player.rankName || "Rank unavailable"}{player.subrank !== null ? ` · Subrank ${player.subrank}` : ""}</p><Link href={`/players/${player.accountId}`}>Open player profile ↗</Link></div></div>)}</div>
+      <section className="panel compare-summary"><div className="compare-player-heading">{data.players.map((player) => <div className="compare-player-card" key={player.accountId}><span className="compare-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{!player.avatar && player.name.slice(0, 1)}</span><div><p className="eyebrow">ACCOUNT {player.accountId}</p><h2>{player.name}</h2><p className="compare-rank"><RankBadge tier={player.rankTier} subrank={player.subrank} name={player.rankName} size="sm" />{player.rankName || "Rank unavailable"}{player.subrank !== null ? ` · Division ${player.subrank}` : ""}</p><Link href={`/players/${player.accountId}`}>Open player profile ↗</Link></div></div>)}</div>
         <div className="compare-metrics">{[
           { label: "CURRENT RANK", values: data.players.map((player) => player.rankName ? `${player.rankName}${player.subrank !== null ? ` · ${player.subrank}` : ""}` : "Unavailable") },
           { label: "SCORED MATCHES", values: data.players.map((player) => num(player.matches)) },
@@ -62,7 +63,7 @@ export default function Compare({ initialLeft, initialRight }: { initialLeft: St
       </section>
       <p className="compare-source-note">Match counts and outcomes are counted from returned history entries. Win rate = wins ÷ scored matches. K/D/A averages use available values per metric. Current rank is the latest ranked badge returned by the API and is not affected by the selected time window.</p>
     </>}
-    <footer><span>DEADLOCK INTELLIGENCE · PLAYER COMPARISON</span><span>Source: Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · PLAYER COMPARISON</footer>
   </main>;
 }
 

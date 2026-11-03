@@ -62,10 +62,9 @@ export default function ItemDetail({ item }: Props) {
       <section className="panel item-hero-analytics"><div className="panel-heading"><div><p className="eyebrow">PER HERO</p><h2>Hero purchase stats</h2></div></div>{heroLoading && <p className="profile-note" role="status">Loading hero breakdown…</p>}{heroError && <p className="profile-note error-message" role="alert">Hero statistics unavailable. {heroError}</p>}{!heroLoading && !heroError && heroes.length > 0 && <div className="item-hero-list">{heroes.slice(0, 12).map((entry) => <Link href={`/heroes/${entry.hero.id}`} className="item-hero-row" key={entry.hero.id}><span>{entry.hero.name || `Hero ${entry.hero.id}`}</span><b>{num(entry.matches)} picks</b><small>{pct(entry.winRate)} win / {pct(entry.pickRate)} pick</small></Link>)}</div>}{!heroLoading && !heroError && heroes.length === 0 && <p className="profile-note">No per-hero purchase rows were returned for these filters.</p>}</section>
     </div>
     <section className="panel item-related-links"><div><p className="eyebrow">RELATED EXPLORATION</p><h2>Continue exploring</h2></div><Link href="/builds">Browse community builds ↗</Link><Link href="/matches">Open Match Explorer ↗</Link><Link href="/heroes">Explore heroes ↗</Link></section>
-    <footer><span>DEADLOCK INTELLIGENCE · ITEM DATA</span><span>Source: Deadlock API <i /></span></footer>
+    <footer>DEADLOCK INTELLIGENCE · ITEM DATA</footer>
   </main>;
 }
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) { return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>; }
 function plainText(value: string) { return value.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/\s+/g, " ").trim(); }
-
