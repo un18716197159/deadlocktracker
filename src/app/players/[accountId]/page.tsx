@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
 import RankBadge from "../../components/rank-badge";
+import { heroPortrait, rankImage } from "../../../lib/assets";
 import {
   getHeroes,
   getMatchHistory,
@@ -69,11 +70,12 @@ async function PlayerContent({ accountId }: { accountId: number }) {
   const ranks = ranksResult.status === "fulfilled" ? ranksResult.value : [];
   const heroNames = Object.fromEntries(heroes.flatMap((hero) => typeof hero.id === "number" && typeof hero.name === "string" ? [[String(hero.id), hero.name]] : []));
   const heroImages = Object.fromEntries(heroes.flatMap((hero) => {
-    const image = hero.images?.icon_image_small_webp || hero.images?.icon_image_small;
+    const image = heroPortrait(hero);
     return typeof hero.id === "number" && typeof image === "string" ? [[String(hero.id), image]] : [];
   }));
   const rank = rankResult.status === "fulfilled" ? rankResult.value : undefined;
   const rankName = typeof rank?.rank === "number" ? ranks.find((entry) => entry.tier === rank.rank)?.name : undefined;
+  const rankArtwork = typeof rank?.rank === "number" ? rankImage(ranks.find((entry) => entry.tier === rank.rank)) : null;
   const scoredMatches = matches.filter((match) => match.player_match_outcome === 1 || match.player_match_outcome === 2);
   const wins = scoredMatches.filter((match) => match.player_match_outcome === 1).length;
   const losses = scoredMatches.filter((match) => match.player_match_outcome === 2).length;
@@ -94,7 +96,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
       <div className="profile-identity">
         <span className="profile-avatar" aria-hidden="true" style={profile?.avatarfull || profile?.avatar ? { backgroundImage: `url("${profile.avatarfull || profile.avatar}")` } : undefined}>{profile?.avatarfull || profile?.avatar ? null : (profile?.personaname?.slice(0, 1) || "?")}</span>
         <div className="profile-name"><p className="eyebrow">STEAM PROFILE</p><h2>{profile?.personaname || "Name unavailable"}</h2><span>Account ID {accountId}{profile?.profileurl && <> · <a href={profile.profileurl} target="_blank" rel="noreferrer">Open Steam profile</a></>}</span></div>
-        <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display"><RankBadge tier={rank?.rank} subrank={rank?.subrank} name={rankName} size="lg" /><span className="rank-display-copy"><strong>{rankName || (typeof rank?.rank === "number" ? `Tier ${rank.rank}` : "Unavailable")}</strong><small>{typeof rank?.subrank === "number" ? `Division ${rank.subrank}` : "Rank data was not returned"}</small></span></div></div>
+        <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display"><RankBadge tier={rank?.rank} subrank={rank?.subrank} name={rankName} image={rankArtwork} size="lg" /><span className="rank-display-copy"><strong>{rankName || (typeof rank?.rank === "number" ? `Tier ${rank.rank}` : "Unavailable")}</strong><small>{typeof rank?.subrank === "number" ? `Division ${rank.subrank}` : "Rank data was not returned"}</small></span></div></div>
       </div>
       {historyError ? <p className="profile-note error-message">Match history is temporarily unavailable. The API did not return a usable response.</p> : <div className="profile-metrics">
         <div className="profile-metric"><small>MATCHES</small><strong>{formatNumber(matches.length)}</strong><span>Returned by match history</span></div>
@@ -139,4 +141,3 @@ async function PlayerPageContent({ params }: Props) {
 export default function PlayerPage({ params }: Props) {
   return <AppShell active="Players"><Suspense fallback={<main className="content-inner player-page"><p className="api-message" role="status">Loading player profile…</p></main>}><PlayerPageContent params={params} /></Suspense></AppShell>;
 }
-

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Row } from "../../lib/heroes-api";
+import { heroCardImage } from "../../lib/assets";
 
 type Stats = { hero_id: number; bucket: number; wins: number; losses: number; matches: number; matches_per_bucket: number; bucket_matches_since_first_day: number; total_kills: number; total_deaths: number; total_assists: number; total_player_damage: number; total_net_worth: number; total_last_hits: number; total_denies: number };
 type Filters = { period: string; gameMode: string; matchMode: string; rating: string };
@@ -50,7 +51,7 @@ export default function Heroes({ rows }: { rows: Row[] }) {
     {loading && <div className="heroes-grid hero-skeleton-grid" role="status" aria-label="Loading hero statistics" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <article className="hero-card hero-skeleton" key={index}><div className="hero-card-art" /><div className="hero-card-body"><span /><span /><span /></div></article>)}</div>}
     {error && <p className="api-message error-message" role="alert">Deadlock API unavailable. {error}</p>}
     {!loading && !error && decorated.length > 0 && <div className="heroes-grid">{decorated.map(({ hero, stat, win, pick }, index) => {
-      const img = hero.images?.background_image_webp || hero.images?.background_image || hero.images?.hero_card_critical;
+      const img = heroCardImage(hero);
       return <Link className="hero-card" href={"/heroes/" + hero.id} key={hero.id}><div className="hero-card-art" role="img" aria-label={hero.name} style={img ? { backgroundImage: 'linear-gradient(0deg,#111d,transparent),url("' + img + '")' } : {}}><span>{index + 1}</span></div><div className="hero-card-body"><p className="eyebrow">{hero.description?.role || "DEADLOCK HERO"} · ID {hero.id}</p><h2>{hero.name}</h2>{hero.description?.playstyle && <p className="hero-playstyle">{hero.description.playstyle}</p>}<div className="hero-card-stats"><div><small>WIN RATE</small><strong>{win === null ? "—" : win.toFixed(1) + "%"}</strong></div><div><small>PICK RATE</small><strong>{pick === null ? "—" : pick.toFixed(1) + "%"}</strong></div><div><small>MATCHES</small><strong>{stat?.matches.toLocaleString() ?? "—"}</strong></div></div>{stat && <p className="hero-playstyle">W / L {stat.wins.toLocaleString()} / {stat.losses.toLocaleString()} · Avg K/D/A {stat.matches ? (stat.total_kills / stat.matches).toFixed(1) : "—"} / {stat.matches ? (stat.total_deaths / stat.matches).toFixed(1) : "—"} / {stat.matches ? (stat.total_assists / stat.matches).toFixed(1) : "—"}</p>}<span className="hero-card-link">VIEW HERO ↗</span></div></Link>;
     })}</div>}
     {!loading && !error && stats.length === 0 && decorated.length > 0 && <p className="heroes-context" role="status">No performance statistics were returned for these filters. Hero assets and detail pages remain available.</p>}
@@ -58,7 +59,6 @@ export default function Heroes({ rows }: { rows: Row[] }) {
     <footer>DEADLOCK INTELLIGENCE · HEROES</footer>
   </main>;
 }
-
 
 
 

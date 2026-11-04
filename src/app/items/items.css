@@ -42,7 +42,7 @@
 .items-footer-links a, .item-related-links a { color: #c9785d; font-size: 10px; text-decoration: none; }
 .item-detail-page, .build-detail-page { padding-top: 26px; }
 .item-detail-hero { display: flex; align-items: center; gap: 23px; padding: 24px; }
-.item-detail-art { display: grid; place-items: center; flex: 0 0 132px; width: 132px; height: 132px; border: 1px solid #343638; background-color: #1d2021; background-size: contain; background-repeat: no-repeat; background-position: center; }
+.item-detail-art { display: grid; place-items: center; flex: 0 0 108px; width: 108px; height: 108px; border: 1px solid #343638; background-color: #1d2021; background-size: contain; background-repeat: no-repeat; background-position: center; }
 .item-detail-heading { min-width: 0; }
 .item-detail-heading .eyebrow { margin: 0; }
 .item-detail-heading h1, .build-detail-hero h1 { margin: 6px 0 9px; color: #ece4dc; font: 400 34px Georgia,serif; }

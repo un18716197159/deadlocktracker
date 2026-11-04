@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { ItemAnalytics, ItemAnalyticsFilters, ItemAsset, ItemFlowView } from "../../lib/items-api";
+import { itemImage } from "../../lib/assets";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
 type AnalyticsPayload = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null };
@@ -79,11 +80,11 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
     {error && <p className="api-message error-message" role="alert">Item analytics unavailable. {error}</p>}
     {!loading && !error && filteredAssets.length > 0 && <div className="items-grid">{filteredAssets.map((item) => {
       const stat = analytics?.stats[String(item.id)];
-      const art = item.image_webp || item.image;
+      const art = itemImage(item);
       return <Link className="item-card" href={`/items/${item.id}`} key={item.id}>
         <span className="item-card-art" aria-hidden="true" style={art ? { backgroundImage: `url("${art}")` } : undefined}>{!art && <i />}</span>
         <span className="item-card-content"><span className="item-card-meta"><span>{item.item_slot_type || "ITEM"} / T{item.item_tier ?? "—"}</span><b>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</b></span><strong>{item.name}</strong>
-          {item.description?.desc && <span className="item-card-description">{plainText(item.description.desc)}</span>}
+          <span className="item-card-description">{item.description?.desc ? plainText(item.description.desc) : ""}</span>
           {loading ? <span className="item-card-stat-state">Loading selected sample…</span> : stat ? <span className="item-card-stats"><span><small>PLAYER PICKS</small><b>{num(stat.matches)}</b></span><span><small>PICK RATE</small><b>{pct(stat.pickRate)}</b></span><span><small>WIN RATE</small><b>{pct(stat.winRate)}</b></span></span> : <span className="item-card-stat-state">No purchase statistics in this selection.</span>}
         </span>
       </Link>;

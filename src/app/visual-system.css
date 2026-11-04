@@ -86,13 +86,36 @@ a { color: inherit; }
 .overview-shortcuts a:hover { border-color: #765794; color: var(--ink); background: #2a2232; }
 .mobile-nav { border-color: var(--line); background: rgb(16 14 18 / 97%); }
 .mobile-nav-item.active, .mobile-nav-item.active .nav-icon { color: var(--accent-bright); }
-.rank-badge { display: inline-block; flex: 0 0 auto; width: 38px; height: 38px; background: center/contain no-repeat; filter: drop-shadow(0 4px 8px #0008); }
-.rank-badge-sm { width: 27px; height: 27px; }
-.rank-badge-lg { width: 58px; height: 58px; }
+.rank-badge { display: inline-block; flex: 0 0 auto; width: 32px; height: 32px; background: center/contain no-repeat; filter: drop-shadow(0 3px 6px #0008); }
+.rank-badge-sm { width: 23px; height: 23px; }
+.rank-badge-lg { width: 48px; height: 48px; }
 .rank-display { display: inline-flex; align-items: center; gap: 9px; }
 .rank-display-copy { display: grid; gap: 2px; }
 .rank-display-copy strong { color: var(--ink); font-size: 11px; font-weight: 500; }
 .rank-display-copy small { color: var(--muted); font-size: 9px; }
+.rank-badge-fallback { display: inline-grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; color: var(--subtle); background: #17131b; filter: none; font: 10px var(--font-data); }
+.item-card-art i { width: 42px; height: 42px; border: 1px dashed #5a4a65; border-radius: 2px; }
+.item-card-content { gap: 9px; padding: 14px; }
+.item-card-meta b { color: var(--accent-bright); }
+.item-card-content > strong { font-size: 17px; }
+.item-card-description { min-height: 32px; }
+.rating-distribution { margin-top: 16px; }
+.rating-list { display: grid; gap: 15px; padding: 0 20px 21px; }
+.rating-row { display: grid; gap: 7px; }
+.rating-row-label { display: flex; justify-content: space-between; gap: 12px; color: var(--ink); font: 11px var(--font-data); }
+.rating-row-label span { color: var(--muted); font-size: 9px; }
+.rating-track { height: 5px; overflow: hidden; background: #2a2131; }
+.rating-track i { display: block; height: 100%; background: var(--accent-bright); opacity: .8; }
+.match-explorer-row { transition: background .14s ease, border-color .14s ease; }
+.match-explorer-row:hover { border-color: #57436a; background: #211a29; }
+.match-explorer-row strong { letter-spacing: .03em; }
+.match-explorer-result-win { color: var(--green); }
+.match-item i { background-size: contain; background-repeat: no-repeat; }
+
+/* Keep verified artwork compact and consistent with the original product density. */
+.item-card-art { height: 104px; background-color: #241d2c; background-size: contain; background-position: center; }
+.item-card-content { grid-template-rows: auto auto minmax(31px, auto) auto; }
+.hero-card-art { height: 168px; background-position: center; background-size: cover; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 .app-shell { position: relative; min-height: 100vh; display: flex; isolation: isolate; background: var(--bg); }
@@ -242,7 +265,7 @@ a { color: inherit; }
 .hero-card-art span { top: 9px; left: 10px; padding: 4px 6px; border: 1px solid #ffffff27; color: #f0e7db; background: #0b0e0c99; font: 8px var(--font-data); }
 .hero-card-body { padding: 15px; }
 .hero-card-body h2 { color: #eee9df; font: 400 20px Georgia, serif; }
-.hero-playstyle { color: #8a938a; }
+.hero-playstyle { display: -webkit-box; min-height: 28px; overflow: hidden; color: #8a938a; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .hero-card-stats { border-color: #29312b; }
 .hero-card-stats small { color: #778078; font: 7px var(--font-data); }
 .hero-card-stats strong { color: #dedfd6; font-family: var(--font-data); }
@@ -416,6 +439,16 @@ footer i { display: inline-block; width: 5px; height: 5px; margin-left: 5px; bor
 .analytics-hero-row .hero-stat { text-align: right; }
 .analytics-hero-row .hero-stat strong { color: #e0e3d9; }
 .success-hero-row .hero-stat strong { color: var(--green); }
+
+/* Final shared density guard: asset artwork stays present without dominating the data. */
+.item-card-art { height: 96px; background-color: #211a2a; background-size: 62% auto; }
+.item-card { background: #19151e; }
+.item-card-content { min-height: 174px; }
+.hero-card-art { height: 168px; background-size: cover; }
+.hero-playstyle { min-height: 28px; max-height: 29px; }
+.rank-badge { width: 32px; height: 32px; }
+.rank-badge-sm { width: 23px; height: 23px; }
+.rank-badge-lg { width: 48px; height: 48px; }
 @media (max-width: 1100px) {
   .sidebar { flex-basis: 70px; width: 70px; align-items: center; padding: 18px 8px; }
   .brand { justify-content: center; margin: 0 0 28px; }

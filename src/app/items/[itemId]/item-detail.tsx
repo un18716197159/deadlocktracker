@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ItemAnalytics, ItemAnalyticsFilters, ItemAsset, ItemHeroStat } from "../../../lib/items-api";
+import { itemImage } from "../../../lib/assets";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
 type Props = { item: ItemAsset };
@@ -36,7 +37,7 @@ export default function ItemDetail({ item }: Props) {
 
   const updateFilter = (key: keyof ItemAnalyticsFilters, value: string) => { setLoading(true); setHeroLoading(true); setError(""); setHeroError(""); setFilters((current) => ({ ...current, [key]: value, ...(key === "gameMode" && value === "street_brawl" ? { rating: "all" } : {}) })); };
   const stat = analytics?.stats[String(item.id)];
-  const image = item.image_webp || item.image;
+  const image = itemImage(item);
   const properties = Object.entries(item.properties ?? {}).flatMap(([key, property]) => {
     if (!property) return [];
     const value = property.value;

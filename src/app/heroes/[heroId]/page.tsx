@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
 import { abilities, catalog } from "../../../lib/heroes-api";
+import { heroBackground } from "../../../lib/assets";
 
 export async function generateMetadata({ params }: { params: Promise<{ heroId: string }> }) {
   const { heroId } = await params;
@@ -17,7 +18,7 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
   if (!row) notFound();
   const { hero, stat, win, pick } = row;
   const list = await abilities(id);
-  const art = hero.images?.background_image_webp || hero.images?.background_image || hero.images?.hero_card_critical;
+  const art = heroBackground(hero);
   return (
     <main className="content-inner hero-detail">
       <Link className="back-link" href="/heroes">← All heroes</Link>
@@ -50,4 +51,3 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
 export default async function Page({ params }: { params: Promise<{ heroId: string }> }) {
   return <AppShell active="Heroes"><Suspense fallback={<main className="content-inner hero-detail"><p className="api-message" role="status">Loading hero data…</p></main>}><HeroContent params={params} /></Suspense></AppShell>;
 }
-

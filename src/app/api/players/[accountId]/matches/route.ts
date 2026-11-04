@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DeadlockApiError, getHeroes, getMatchHistory, getPlayerHeroStats, getPlayerRank, getRanks } from "@/lib/deadlock-api";
+import { heroPortrait, rankImage } from "@/lib/assets";
 
 export async function GET(_request: NextRequest, { params }: RouteContext<"/api/players/[accountId]/matches">) {
   const { accountId: rawId } = await params;
@@ -18,8 +19,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext<"/api/
       for (const hero of heroes) {
         if (typeof hero.id !== "number") continue;
         if (typeof hero.name === "string") heroNames[String(hero.id)] = hero.name;
-        const images = hero.images as { icon_image_small?: unknown } | undefined;
-        if (typeof images?.icon_image_small === "string") heroImages[String(hero.id)] = images.icon_image_small;
+        const image = heroPortrait(hero);
+        if (image) heroImages[String(hero.id)] = image;
       }
     } catch {
       // Preserve match history when asset data is temporarily unavailable.
@@ -37,6 +38,9 @@ export async function GET(_request: NextRequest, { params }: RouteContext<"/api/
         typeof entry.tier === "number" && typeof entry.name === "string" ? [[entry.tier, entry.name]] : [],
       ))
       : {};
+    const rankArtwork = rankResult.status === "fulfilled"
+      ? rankImage(ranksResult.status === "fulfilled" ? ranksResult.value.find((entry) => entry.tier === rank?.rank) : undefined)
+      : null;
     return NextResponse.json({
       matches,
       heroNames,
@@ -44,6 +48,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext<"/api/
       rank,
       rankAvailable: rankResult.status === "fulfilled",
       rankNames,
+      rankImage: rankArtwork,
       heroStats,
       heroStatsAvailable: heroStatsResult.status === "fulfilled",
     });

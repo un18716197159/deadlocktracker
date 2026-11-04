@@ -8,10 +8,11 @@ import {
   getSteamProfiles,
   type MatchHistoryEntry,
 } from "@/lib/deadlock-api";
+import { heroPortrait, rankImage } from "@/lib/assets";
 
 type Period = "30d" | "90d" | "all";
 type HeroSummary = { heroId: number; name: string; image: string | null; matches: number; wins: number; losses: number; winRate: number; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null };
-type ComparedPlayer = { accountId: number; name: string; avatar: string | null; rankName: string | null; rankTier: number | null; subrank: number | null; matches: number; wins: number; losses: number; winRate: number | null; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null; heroes: HeroSummary[] };
+type ComparedPlayer = { accountId: number; name: string; avatar: string | null; rankName: string | null; rankTier: number | null; subrank: number | null; rankImage: string | null; matches: number; wins: number; losses: number; winRate: number | null; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null; heroes: HeroSummary[] };
 
 function validAccountId(value: string | null): number | null {
   if (!value || !/^\d{1,10}$/.test(value)) return null;
@@ -44,7 +45,7 @@ function summarizePlayer(accountId: number, history: MatchHistoryEntry[], profil
     return {
       heroId,
       name: hero?.name || `Hero ${heroId}`,
-      image: hero?.images?.icon_image_small_webp || hero?.images?.icon_image_small || null,
+      image: hero ? heroPortrait(hero) : null,
       matches: counted,
       wins: heroWins,
       losses: heroLosses,
@@ -62,6 +63,7 @@ function summarizePlayer(accountId: number, history: MatchHistoryEntry[], profil
     rankName: rankTier === null ? null : rankAssets.find((asset) => asset.tier === rankTier)?.name || `Tier ${rankTier}`,
     rankTier,
     subrank: rankTier === null || typeof rank?.subrank !== "number" ? null : rank.subrank,
+    rankImage: rankTier === null ? null : rankImage(rankAssets.find((asset) => asset.tier === rankTier)),
     matches: scored.length,
     wins,
     losses,

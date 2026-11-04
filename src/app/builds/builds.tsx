@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { BuildView } from "../../lib/items-api";
+import { heroPortrait } from "../../lib/assets";
 
 type Props = { heroes: HeroAsset[]; initialHeroId: number | null };
 type Payload = { builds: BuildView[] };
@@ -37,7 +38,8 @@ export default function Builds({ heroes, initialHeroId }: Props) {
     {error && <p className="api-message error-message" role="alert">Community builds unavailable. {error}</p>}
     {!loading && !error && rows.length > 0 && <div className="builds-grid">{rows.map(({ build, hero, categories }) => {
       const heroBuild = build.hero_build;
-      return <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}><div className="community-build-top"><span className="community-build-hero-art" aria-hidden="true" style={hero?.images?.icon_image_small_webp || hero?.images?.icon_image_small ? { backgroundImage: `url("${hero.images.icon_image_small_webp || hero.images.icon_image_small}")` } : undefined} /><div><Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link><h2>{heroBuild.name}</h2><p>{heroBuild.description || "No build description provided."}</p></div></div><div className="community-build-meta"><span>{count(build.num_weekly_favorites)} weekly favorites</span><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div><div className="community-build-items">{categories.slice(0, 3).map((category) => <div key={category.name}><small>{category.name}</small><span>{category.items.slice(0, 4).map((entry) => entry.item?.name || `Item ${entry.item?.id ?? "unavailable"}`).join(" · ") || "No item entries"}</span></div>)}</div><Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link></article>;
+      const image = hero ? heroPortrait(hero) : null;
+      return <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}><div className="community-build-top"><span className="community-build-hero-art" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined} /><div><Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link><h2>{heroBuild.name}</h2><p>{heroBuild.description || "No build description provided."}</p></div></div><div className="community-build-meta"><span>{count(build.num_weekly_favorites)} weekly favorites</span><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div><div className="community-build-items">{categories.slice(0, 3).map((category) => <div key={category.name}><small>{category.name}</small><span>{category.items.slice(0, 4).map((entry) => entry.item?.name || `Item ${entry.item?.id ?? "unavailable"}`).join(" · ") || "No item entries"}</span></div>)}</div><Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link></article>;
     })}</div>}
     {!loading && !error && rows.length === 0 && <p className="api-message">No published builds matched these filters.</p>}
     <footer>DEADLOCK INTELLIGENCE · COMMUNITY BUILDS</footer>

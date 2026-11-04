@@ -30,6 +30,7 @@ export default function Home() {
   const [rank, setRank] = useState<PlayerRank | null>(null);
   const [rankAvailable, setRankAvailable] = useState(false);
   const [rankNames, setRankNames] = useState<Record<string, string>>({});
+  const [rankImage, setRankImage] = useState<string | null>(null);
   const [playerHeroStats, setPlayerHeroStats] = useState<PlayerHeroStats[]>([]);
   const [heroStatsAvailable, setHeroStatsAvailable] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -91,6 +92,7 @@ export default function Home() {
     setRank(null);
     setRankAvailable(false);
     setRankNames({});
+    setRankImage(null);
     setPlayerHeroStats([]);
     setHeroStatsAvailable(false);
     setHeroImages({});
@@ -109,6 +111,7 @@ export default function Home() {
         setRank(data.rank && typeof data.rank === "object" ? data.rank : null);
         setRankAvailable(data.rankAvailable === true);
         setRankNames(data.rankNames && typeof data.rankNames === "object" ? data.rankNames : {});
+        setRankImage(typeof data.rankImage === "string" ? data.rankImage : null);
         setPlayerHeroStats(Array.isArray(data.heroStats) ? data.heroStats : []);
         setHeroStatsAvailable(data.heroStatsAvailable === true);
       })
@@ -183,7 +186,7 @@ export default function Home() {
             <div className="profile-identity">
               <span className="profile-avatar" aria-hidden="true" style={(selectedPlayer.avatarfull || selectedPlayer.avatar) ? { backgroundImage: `url("${selectedPlayer.avatarfull || selectedPlayer.avatar}")` } : undefined}>{(selectedPlayer.avatarfull || selectedPlayer.avatar) ? null : selectedPlayer.personaname?.slice(0, 1) || "?"}</span>
               <div className="profile-name"><p className="eyebrow">PLAYER PROFILE</p><h2>{selectedPlayer.personaname || "Unknown Steam player"}</h2><span>Account ID {selectedPlayer.account_id ?? "Unavailable"}{selectedPlayer.profileurl && <> · <a href={selectedPlayer.profileurl} target="_blank" rel="noreferrer">Steam profile ↗</a></>}</span></div>
-            <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display">{!loadingMatches && rankAvailable && typeof rank?.rank === "number" && rank.rank > 0 && <RankBadge tier={rank.rank} subrank={rank.subrank} name={rankNames[String(rank.rank)]} size="sm" />}<strong>{loadingMatches ? "Loading rank…" : rankAvailable && rank?.rank === 0 ? "Obscurus · Unranked" : rankAvailable && typeof rank?.rank === "number" ? `${rankNames[String(rank.rank)] || `Tier ${rank.rank}`}${typeof rank.subrank === "number" && rank.subrank > 0 ? ` ${rank.subrank}` : ""}` : "Rank unavailable"}</strong></div></div>
+            <div className="profile-rank"><small>CURRENT RANK</small><div className="rank-display">{!loadingMatches && rankAvailable && typeof rank?.rank === "number" && rank.rank >= 0 && <RankBadge tier={rank.rank} subrank={rank.subrank} name={rankNames[String(rank.rank)]} image={rankImage} size="sm" />}<strong>{loadingMatches ? "Loading rank…" : rankAvailable && rank?.rank === 0 ? "Obscurus · Unranked" : rankAvailable && typeof rank?.rank === "number" ? `${rankNames[String(rank.rank)] || `Tier ${rank.rank}`}${typeof rank.subrank === "number" && rank.subrank > 0 ? ` ${rank.subrank}` : ""}` : "Rank unavailable"}</strong></div></div>
             </div>
             {loadingMatches && <p className="profile-note" role="status">Loading match history and player statistics…</p>}
             {matchError && <p className="profile-note error-message" role="alert">Player statistics could not be loaded. {matchError}</p>}
@@ -235,4 +238,3 @@ export default function Home() {
 function ProfileMetric({ label, value, note }: { label: string; value: string; note: string }) {
   return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>;
 }
-

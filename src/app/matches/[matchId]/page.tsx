@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
 import { getHeroes, getMatchDetails, getMatchItems, getSteamProfiles } from "../../../lib/deadlock-api";
+import { heroPortrait, itemImage } from "../../../lib/assets";
 
 type Props = { params: Promise<{ matchId: string }>; searchParams: Promise<{ account_id?: string }> };
 export async function generateMetadata({ params }: Props) {
@@ -39,12 +40,12 @@ async function Content({ params, searchParams }: Props) {
           const name = profile?.personaname || `Account ID ${player.account_id}`;
           const heroName = hero?.name || (player.hero_id === undefined ? "Hero unavailable" : "Unknown hero (" + player.hero_id + ")");
           const heroHref = hero?.id === undefined ? undefined : "/heroes/" + hero.id;
-          const portrait = hero?.images?.icon_image_small_webp || hero?.images?.icon_image_small;
+          const portrait = hero ? heroPortrait(hero) : null;
           const recentItems = [...player.items].sort((a, b) => (a.game_time_s ?? 0) - (b.game_time_s ?? 0));
           return <article className="match-player" key={player.account_id}>
             <div className="match-player-main"><span className="match-player-avatar" aria-hidden="true" style={profile?.avatar ? { backgroundImage: `url("${profile.avatar}")` } : {}}>{profile?.avatar ? "" : name.slice(0, 1)}</span><span className="match-player-hero" aria-hidden="true" style={portrait ? { backgroundImage: `url("${portrait}")` } : {}}>{portrait ? "" : "?"}</span><div className="match-player-name"><strong><Link href={"/players/" + player.account_id}>{name}</Link></strong><small>{heroHref ? <Link href={heroHref}>{heroName}</Link> : heroName} · ID {player.account_id}</small></div>{profile?.profileurl && <a className="match-steam-link" href={profile.profileurl} target="_blank" rel="noreferrer">Steam ↗</a>}</div>
             <div className="match-player-stats"><div><small>K / D / A</small><strong>{fmtStat(player.kills)} / {fmtStat(player.deaths)} / {fmtStat(player.assists)}</strong></div><div><small>NET WORTH</small><strong>{fmtStat(player.net_worth)}</strong></div><div><small>LAST HITS</small><strong>{fmtStat(player.last_hits)}</strong></div><div><small>DENIES</small><strong>{fmtStat(player.denies)}</strong></div><div><small>LEVEL</small><strong>{fmtStat(player.level)}</strong></div><div><small>PLAYER DAMAGE</small><strong>{fmtStat(player.player_damage)}</strong></div><div><small>DAMAGE TAKEN</small><strong>{fmtStat(player.player_damage_taken)}</strong></div><div><small>HEALING</small><strong>{fmtStat(player.player_healing)}</strong></div></div>
-            {recentItems.length > 0 && <div className="match-inventory"><small>ITEM HISTORY / PURCHASE AND SALE EVENTS</small><div>{recentItems.map((event, index) => { const item = event.item_id === undefined ? undefined : itemById.get(event.item_id); const label = item?.name || (event.item_id === undefined ? "Unknown item" : `Unknown item (${event.item_id})`); const content = <><i style={item?.image_webp || item?.image ? { backgroundImage: `url("${item.image_webp || item.image}")` } : {}} />{label}<b>{fmtDuration(event.game_time_s)}</b>{event.sold_time_s !== undefined ? <em>SOLD {fmtDuration(event.sold_time_s)}</em> : null}</>; return event.item_id !== undefined && item ? <Link className="match-item" href={`/items/${event.item_id}`} key={`${event.item_id}-${event.game_time_s}-${index}`} title={label}>{content}</Link> : <span className="match-item" key={`${event.item_id}-${event.game_time_s}-${index}`} title={label}>{content}</span>; })}</div></div>}
+            {recentItems.length > 0 && <div className="match-inventory"><small>ITEM HISTORY / PURCHASE AND SALE EVENTS</small><div>{recentItems.map((event, index) => { const item = event.item_id === undefined ? undefined : itemById.get(event.item_id); const label = item?.name || (event.item_id === undefined ? "Unknown item" : `Unknown item (${event.item_id})`); const image = item ? itemImage(item) : null; const content = <><i style={image ? { backgroundImage: `url("${image}")` } : {}} />{label}<b>{fmtDuration(event.game_time_s)}</b>{event.sold_time_s !== undefined ? <em>SOLD {fmtDuration(event.sold_time_s)}</em> : null}</>; return event.item_id !== undefined && item ? <Link className="match-item" href={`/items/${event.item_id}`} key={`${event.item_id}-${event.game_time_s}-${index}`} title={label}>{content}</Link> : <span className="match-item" key={`${event.item_id}-${event.game_time_s}-${index}`} title={label}>{content}</span>; })}</div></div>}
           </article>;
         })}</div>}
       </section>;
@@ -59,6 +60,5 @@ async function Content({ params, searchParams }: Props) {
 export default function MatchPage(props: Props) {
   return <AppShell active="Matches"><Suspense fallback={<main className="content-inner match-detail"><p className="api-message" role="status">Loading match metadata…</p></main>}><Content {...props} /></Suspense></AppShell>;
 }
-
 
 

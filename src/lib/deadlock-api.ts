@@ -30,7 +30,7 @@ export type MatchHistoryEntry = {
   match_mode?: number;
 };
 
-export type HeroAsset = { id?: number; name?: string; description?: { lore?: string | null; playstyle?: string | null; role?: string | null } | null; images?: { icon_image_small?: string | null; icon_image_small_webp?: string | null; background_image?: string | null; background_image_webp?: string | null; hero_card_critical?: string | null } | null; in_development?: boolean; limited_testing?: boolean; [key: string]: unknown };
+export type HeroAsset = { id?: number; name?: string; description?: { lore?: string | null; playstyle?: string | null; role?: string | null } | null; images?: { icon_image_small?: string | null; icon_image_small_webp?: string | null; icon_hero_card?: string | null; icon_hero_card_webp?: string | null; background_image?: string | null; background_image_webp?: string | null; hero_card_critical?: string | null; hero_card_critical_webp?: string | null } | null; in_development?: boolean; limited_testing?: boolean; [key: string]: unknown };
 export type PlayerRank = { badge?: number; rank?: number; subrank?: number; last_match?: unknown };
 export type PlayerHeroStats = {
   account_id?: number;
@@ -48,7 +48,7 @@ export type OfficialLeaderboardEntry = { account_name: string; possible_account_
 export type RankedSeasonAsset = { class_name: string; name: string; intervals: Array<{ interval: number; start_timestamp: number; end_timestamp: number; leaderboard_id: number }> };
 export type PlayerScoreboardMetric = { rank: number; account_id: number; value: number; matches: number };
 export type LeaderboardPlayerStats = { matches: number | null; wins: number | null; losses: number | null; winRate: number | null; kills: number | null; deaths: number | null; assists: number | null };
-export type LeaderboardPlayer = { place: number; name: string; accountId: number | null; avatar: string | null; rank: string | null; rankTier: number | null; rankSubrank: number | null; topHeroIds: number[]; stats: LeaderboardPlayerStats | null };
+export type LeaderboardPlayer = { place: number; name: string; accountId: number | null; avatar: string | null; rank: string | null; rankTier: number | null; rankSubrank: number | null; rankImage: string | null; topHeroIds: number[]; stats: LeaderboardPlayerStats | null };
 
 export class DeadlockApiError extends Error {
   constructor(message: string, public status: number, public retryAfter?: string) {
@@ -383,6 +383,6 @@ export async function getLeaderboardPlayers(options: { region: LeaderboardRegion
     const profile = accountId === null ? undefined : profilesById.get(accountId);
     const currentRank = accountId === null ? undefined : ranksById.get(accountId);
     const rankName = typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.name || `Tier ${currentRank.rank}` : null;
-    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, rankTier: typeof currentRank?.rank === "number" ? currentRank.rank : null, rankSubrank: typeof currentRank?.subrank === "number" ? currentRank.subrank : null, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
+    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, rankTier: typeof currentRank?.rank === "number" ? currentRank.rank : null, rankSubrank: typeof currentRank?.subrank === "number" ? currentRank.subrank : null, rankImage: typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.images?.small_webp || rankAssets.find((asset) => asset.tier === currentRank.rank)?.images?.small || null : null, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
   });
 }
