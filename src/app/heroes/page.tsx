@@ -1,4 +1,4 @@
-﻿import { Suspense } from "react";
+import { Suspense } from "react";
 import AppShell from "../components/app-shell";
 import { catalog } from "../../lib/heroes-api";
 import Heroes from "./heroes";

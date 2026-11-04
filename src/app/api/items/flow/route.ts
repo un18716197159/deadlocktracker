@@ -1,4 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { getItemFlow, ItemApiError, type ItemAnalyticsFilters } from "../../../../lib/items-api";
 
 function parseFilters(request: NextRequest): { filters: ItemAnalyticsFilters; heroId?: number } {
@@ -21,7 +22,7 @@ function parseFilters(request: NextRequest): { filters: ItemAnalyticsFilters; he
 export async function GET(request: NextRequest) {
   try {
     const { filters, heroId } = parseFilters(request);
-    return NextResponse.json({ flows: await getItemFlow(filters, heroId) });
+    return cachedJson({ flows: await getItemFlow(filters, heroId) });
   } catch (error) {
     const message = error instanceof ItemApiError ? error.message : "Could not load item flow analytics.";
     return NextResponse.json({ error: message }, { status: 502 });

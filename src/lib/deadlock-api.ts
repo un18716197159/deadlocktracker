@@ -1,4 +1,5 @@
 import "server-only";
+import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 import { cacheLife } from "next/cache";
 
 const API_BASE = "https://api.deadlock-api.com";
@@ -63,7 +64,7 @@ async function request<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise
     response = await fetch(`${API_BASE}${path}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
-      headers: { Accept: "application/json" },
+      headers: deadlockHeaders(),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
@@ -271,7 +272,7 @@ export async function getMatchList(filters: MatchListFilters): Promise<MatchList
     limit: String(Math.min(Math.max(filters.limit, 1), 100)),
   });
   if (filters.heroId !== undefined) params.set("hero_ids", String(filters.heroId));
-  if (filters.periodDays !== undefined) params.set("min_unix_timestamp", String(Math.floor(Date.now() / 1000) - filters.periodDays * 86400));
+  if (filters.periodDays !== undefined) params.set("min_unix_timestamp", String(cacheNowSeconds() - filters.periodDays * 86400));
   if (filters.minDurationS !== undefined) params.set("min_duration_s", String(filters.minDurationS));
   if (filters.maxDurationS !== undefined) params.set("max_duration_s", String(filters.maxDurationS));
   if (filters.gameMode) params.set("game_mode", filters.gameMode);
@@ -339,7 +340,7 @@ type PlayerScoreboardField = typeof PLAYER_SCOREBOARD_FIELDS[number];
 
 async function getPlayerScoreboardField(accountIds: number[], field: PlayerScoreboardField, period: "30d" | "90d" | "all", heroId?: number): Promise<PlayerScoreboardMetric[]> {
   const params = new URLSearchParams({ sort_by: field, sort_direction: "desc", account_ids: accountIds.join(","), game_mode: "normal", match_mode: "ranked,unranked", min_matches: "1", limit: "1000" });
-  if (period !== "all") params.set("min_unix_timestamp", String(Math.floor(Date.now() / 1000) - (period === "30d" ? 30 : 90) * 86400));
+  if (period !== "all") params.set("min_unix_timestamp", String(cacheNowSeconds() - (period === "30d" ? 30 : 90) * 86400));
   if (heroId !== undefined) params.set("hero_id", String(heroId));
   const result = await request<unknown>(`/v1/analytics/scoreboards/players?${params}`, 20_000);
   if (!Array.isArray(result)) throw new DeadlockApiError("Deadlock API returned invalid player scoreboard statistics.", 502);

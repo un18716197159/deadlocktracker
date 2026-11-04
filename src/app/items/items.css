@@ -1,4 +1,4 @@
-﻿.items-page { padding-top: 30px; }
+.items-page { padding-top: 30px; }
 .items-page h1, .builds-page h1 { margin: 7px 0; font: 400 38px Georgia,serif; }
 .items-page h1 > span, .builds-page h1 > span, .item-detail-heading h1 > span, .build-detail-hero h1 > span { color: var(--accent); }
 .items-filters, .builds-filters { display: grid; grid-template-columns: minmax(170px,1.35fr) repeat(4,minmax(120px,1fr)); gap: 9px; align-items: end; margin: 24px 0 12px; padding: 13px; border: 1px solid var(--line); background: #17191a; }

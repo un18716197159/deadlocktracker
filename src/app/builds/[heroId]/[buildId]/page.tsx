@@ -1,4 +1,4 @@
-﻿import { notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import AppShell from "../../../components/app-shell";

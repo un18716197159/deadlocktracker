@@ -1,4 +1,5 @@
-﻿import "server-only";
+import "server-only";
+import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 import { cacheLife } from "next/cache";
 import { getHeroes, type HeroAsset } from "./deadlock-api";
 
@@ -51,7 +52,7 @@ export type BuildView = { build: CommunityBuild; hero: HeroAsset | null; categor
 async function requestJson<T>(path: string, timeout = 20_000): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeout), headers: { Accept: "application/json" } });
+    response = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeout), headers: deadlockHeaders() });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") throw new ItemApiError("Deadlock API timed out. Please try again.", 504);
     throw new ItemApiError("Could not connect to Deadlock API.", 502);
@@ -66,7 +67,7 @@ async function requestJson<T>(path: string, timeout = 20_000): Promise<T> {
 function filtersQuery(filters: ItemAnalyticsFilters, bucket: string, heroId?: number) {
   const params = new URLSearchParams({ bucket, game_mode: filters.gameMode, match_mode: filters.matchMode });
   const days = filters.period === "7d" ? 7 : filters.period === "30d" ? 30 : filters.period === "90d" ? 90 : 0;
-  params.set("min_unix_timestamp", String(days ? Math.floor(Date.now() / 1000) - days * DAY : 0));
+  params.set("min_unix_timestamp", String(days ? cacheNowSeconds() - days * DAY : 0));
   if (filters.rating !== "all" && filters.gameMode !== "street_brawl") {
     const [min, max] = filters.rating.split("-");
     params.set("min_average_badge", min);

@@ -1,10 +1,12 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
 import RankBadge from "../../components/rank-badge";
 import { heroPortrait, rankImage } from "../../../lib/assets";
+import { average, formatDate, formatDuration, formatNumber } from "../../../lib/format";
+import { parseAccountId } from "../../../lib/validation";
 import {
   getHeroes,
   getMatchHistory,
@@ -17,31 +19,6 @@ import {
 } from "../../../lib/deadlock-api";
 
 type Props = { params: Promise<{ accountId: string }> };
-
-function validAccountId(value: string) {
-  if (!/^\d{1,10}$/.test(value)) return false;
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 2_147_483_647;
-}
-
-function average(values: Array<number | undefined>) {
-  const available = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0);
-  return available.length ? available.reduce((sum, value) => sum + value, 0) / available.length : null;
-}
-
-function formatNumber(value: number | undefined) {
-  return typeof value === "number" && Number.isFinite(value) ? value.toLocaleString() : "—";
-}
-
-function formatDate(value: number | undefined) {
-  return typeof value === "number" && Number.isFinite(value) ? new Date(value * 1000).toLocaleString() : "—";
-}
-
-function formatDuration(value: number | undefined) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, "0")}`
-    : "—";
-}
 
 function outcome(value: number | undefined) {
   if (value === 1) return { label: "Victory", className: "win" };
@@ -134,8 +111,9 @@ function MatchRow({ accountId, match, heroName }: { accountId: number; match: Ma
 
 async function PlayerPageContent({ params }: Props) {
   const { accountId: rawAccountId } = await params;
-  if (!validAccountId(rawAccountId)) notFound();
-  return <PlayerContent accountId={Number(rawAccountId)} />;
+  const accountId = parseAccountId(rawAccountId);
+  if (accountId === null) notFound();
+  return <PlayerContent accountId={accountId} />;
 }
 
 export default function PlayerPage({ params }: Props) {

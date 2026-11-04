@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import {
   DeadlockApiError,
   getHeroes,
@@ -9,16 +10,11 @@ import {
   type MatchHistoryEntry,
 } from "@/lib/deadlock-api";
 import { heroPortrait, rankImage } from "@/lib/assets";
+import { parseAccountId as validAccountId } from "@/lib/validation";
 
 type Period = "30d" | "90d" | "all";
 type HeroSummary = { heroId: number; name: string; image: string | null; matches: number; wins: number; losses: number; winRate: number; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null };
 type ComparedPlayer = { accountId: number; name: string; avatar: string | null; rankName: string | null; rankTier: number | null; subrank: number | null; rankImage: string | null; matches: number; wins: number; losses: number; winRate: number | null; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null; heroes: HeroSummary[] };
-
-function validAccountId(value: string | null): number | null {
-  if (!value || !/^\d{1,10}$/.test(value)) return null;
-  const id = Number(value);
-  return Number.isSafeInteger(id) && id >= 0 && id <= 2_147_483_647 ? id : null;
-}
 
 function average(matches: MatchHistoryEntry[], field: "player_kills" | "player_deaths" | "player_assists") {
   const values = matches.flatMap((match) => typeof match[field] === "number" && Number.isFinite(match[field]) && match[field]! >= 0 ? [match[field]!] : []);
@@ -100,5 +96,5 @@ export async function GET(request: NextRequest) {
   const profileById = new Map(profiles.flatMap((profile) => typeof profile.account_id === "number" ? [[profile.account_id, profile] as const] : []));
   const rankById = new Map(ranks.map((rank) => [rank.account_id, rank]));
   const players = [leftId, rightId].map((id, index) => summarizePlayer(id, index === 0 ? leftHistory.value : rightHistory.value, profileById.get(id), rankById.get(id), rankAssets, heroes, minTimestamp));
-  return NextResponse.json({ players, period, sample: "Scored match-history rows (wins and losses), all game and match modes" });
+  return cachedJson({ players, period, sample: "Scored match-history rows (wins and losses), all game and match modes" });
 }

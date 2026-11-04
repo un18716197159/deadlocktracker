@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { DeadlockApiError, searchPlayers } from "@/lib/deadlock-api";
 
 export async function GET(request: NextRequest) {
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    return NextResponse.json({ players: await searchPlayers(query) });
+    return cachedJson({ players: await searchPlayers(query) });
   } catch (error) {
     const failure = error instanceof DeadlockApiError ? error : new DeadlockApiError("Player search failed.", 502);
     return NextResponse.json({ error: failure.message, retryAfter: failure.retryAfter }, { status: failure.status });

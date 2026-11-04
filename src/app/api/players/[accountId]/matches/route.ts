@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { DeadlockApiError, getHeroes, getMatchHistory, getPlayerHeroStats, getPlayerRank, getRanks } from "@/lib/deadlock-api";
 import { heroPortrait, rankImage } from "@/lib/assets";
 
@@ -41,7 +42,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext<"/api/
     const rankArtwork = rankResult.status === "fulfilled"
       ? rankImage(ranksResult.status === "fulfilled" ? ranksResult.value.find((entry) => entry.tier === rank?.rank) : undefined)
       : null;
-    return NextResponse.json({
+    return cachedJson({
       matches,
       heroNames,
       heroImages,

@@ -1,4 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { getItemHeroAnalytics, ItemApiError, type ItemAnalyticsFilters } from "../../../../lib/items-api";
 
 function parseFilters(request: NextRequest): ItemAnalyticsFilters {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ ite
   if (!/^\d+$/.test(itemId) || !Number.isSafeInteger(Number(itemId))) return NextResponse.json({ error: "Invalid item ID." }, { status: 400 });
   try {
     const rows = await getItemHeroAnalytics(Number(itemId), parseFilters(request));
-    return NextResponse.json({ heroes: rows });
+    return cachedJson({ heroes: rows });
   } catch (error) {
     const message = error instanceof ItemApiError ? error.message : "Could not load item hero analytics.";
     return NextResponse.json({ error: message }, { status: 502 });

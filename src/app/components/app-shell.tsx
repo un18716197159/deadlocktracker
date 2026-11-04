@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type IconName = "overview" | "players" | "matches" | "heroes" | "items" | "builds" | "leaderboards" | "compare";

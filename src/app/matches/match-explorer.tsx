@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { HeroAsset, MatchListEntry } from "../../lib/deadlock-api";
 
 type Filters = { heroId: string; period: string; duration: string; gameMode: string; matchMode: string; sort: string };

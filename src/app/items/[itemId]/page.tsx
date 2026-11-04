@@ -1,4 +1,4 @@
-﻿import { connection } from "next/server";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppShell from "../../components/app-shell";

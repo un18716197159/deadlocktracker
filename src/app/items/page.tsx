@@ -1,4 +1,4 @@
-﻿import { Suspense } from "react";
+import { Suspense } from "react";
 import AppShell from "../components/app-shell";
 import { getHeroes } from "../../lib/deadlock-api";
 import { getItemAssets } from "../../lib/items-api";

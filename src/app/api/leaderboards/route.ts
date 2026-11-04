@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { DeadlockApiError, getLeaderboardPlayers, type LeaderboardRegion } from "@/lib/deadlock-api";
 
 const regions = ["Europe", "Asia", "NAmerica", "SAmerica", "Oceania"] as const;
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   const period = rawPeriod === "90d" || rawPeriod === "all" ? rawPeriod : "30d";
   try {
     const players = await getLeaderboardPlayers({ region: rawRegion as LeaderboardRegion, heroId, leaderboardId, period });
-    return NextResponse.json({ players, region: rawRegion, heroId: heroId ?? null, leaderboardId: leaderboardId ?? null, period, apiLimit: players.length });
+    return cachedJson({ players, region: rawRegion, heroId: heroId ?? null, leaderboardId: leaderboardId ?? null, period, apiLimit: players.length });
   } catch (error) {
     const failure = error instanceof DeadlockApiError ? error : new DeadlockApiError("Could not load the Deadlock leaderboard.", 502);
     return NextResponse.json({ error: failure.message, retryAfter: failure.retryAfter }, { status: failure.status });

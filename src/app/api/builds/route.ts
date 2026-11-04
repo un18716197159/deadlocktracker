@@ -1,4 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/http";
 import { getCommunityBuilds, ItemApiError } from "../../../lib/items-api";
 
 export async function GET(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   const sort = rawSort === "favorites" || rawSort === "updated_at" ? rawSort : "weekly_favorites";
   if (heroId !== undefined && !Number.isSafeInteger(heroId)) return NextResponse.json({ error: "Invalid hero ID." }, { status: 400 });
   try {
-    return NextResponse.json({ builds: await getCommunityBuilds({ heroId, start, limit, sort, query: query.get("q") ?? undefined }) });
+    return cachedJson({ builds: await getCommunityBuilds({ heroId, start, limit, sort, query: query.get("q") ?? undefined }) });
   } catch (error) {
     const message = error instanceof ItemApiError ? error.message : "Could not load community builds.";
     return NextResponse.json({ error: message }, { status: 502 });

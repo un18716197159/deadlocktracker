@@ -1,4 +1,5 @@
-﻿import "server-only";
+import "server-only";
+import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 
 const API = "https://api.deadlock-api.com/v1/analytics";
 
@@ -45,7 +46,7 @@ export const defaultAnalyticsFilters: AnalyticsFilters = {
 function queryFor(filters: AnalyticsFilters, bucket = filters.bucket, range?: { start: number; end: number }) {
   const params = new URLSearchParams({ bucket, game_mode: filters.gameMode, match_mode: filters.matchMode });
   const days = filters.period === "7d" ? 7 : filters.period === "30d" ? 30 : filters.period === "90d" ? 90 : 0;
-  params.set("min_unix_timestamp", String(range?.start ?? (days ? Math.floor(Date.now() / 1000) - days * 86400 : 0)));
+  params.set("min_unix_timestamp", String(range?.start ?? (days ? cacheNowSeconds() - days * 86400 : 0)));
   if (range) params.set("max_unix_timestamp", String(range.end));
   if (filters.rating !== "all" && filters.gameMode !== "street_brawl") {
     const [min, max] = filters.rating.split("-");
@@ -57,7 +58,7 @@ function queryFor(filters: AnalyticsFilters, bucket = filters.bucket, range?: { 
 
 async function get<T>(endpoint: string, filters: AnalyticsFilters, bucket = filters.bucket, range?: { start: number; end: number }): Promise<T[]> {
   const response = await fetch(`${API}/${endpoint}?${queryFor(filters, bucket, range)}`, {
-    cache: "no-store", signal: AbortSignal.timeout(20_000), headers: { Accept: "application/json" },
+    cache: "no-store", signal: AbortSignal.timeout(20_000), headers: deadlockHeaders(),
   });
   if (!response.ok) throw new Error(`Deadlock API request failed (${response.status}).`);
   const data: unknown = await response.json();
@@ -71,7 +72,7 @@ export async function getHeroAnalytics(filters: AnalyticsFilters): Promise<HeroA
 
 export async function getGlobalAnalytics(filters: AnalyticsFilters) {
   const days = filters.period === "7d" ? 7 : filters.period === "30d" ? 30 : filters.period === "90d" ? 90 : 0;
-  const end = Math.floor(Date.now() / 1000);
+  const end = cacheNowSeconds();
   const range = days ? { start: end - days * 86400, end } : undefined;
   const [summary, heroes, trend, ratings] = await Promise.all([
     get<GameAnalytics>("game-stats", filters, "no_bucket", range),

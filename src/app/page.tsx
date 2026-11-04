@@ -1,20 +1,16 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppShell from "./components/app-shell";
 import GlobalAnalyticsPanel from "./components/global-analytics-panel";
 import RankBadge from "./components/rank-badge";
+import { average } from "../lib/format";
 
 type Player = { account_id?: number; personaname?: string; avatar?: string; avatarfull?: string; profileurl?: string; matches_played_last_30d?: number };
 type Match = { match_id?: number; hero_id?: number; start_time?: number; match_duration_s?: number; player_kills?: number; player_deaths?: number; player_assists?: number; player_match_outcome?: number };
 type PlayerRank = { badge?: number; rank?: number; subrank?: number; last_match?: unknown };
 type PlayerHeroStats = { hero_id?: number; matches_played?: number; wins?: number; kills?: number; deaths?: number; assists?: number };
-
-function average(values: Array<number | undefined>) {
-  const available = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0);
-  return available.length ? available.reduce((sum, value) => sum + value, 0) / available.length : null;
-}
 
 function availableCount(values: Array<number | undefined>) {
   return values.filter((value) => typeof value === "number" && Number.isFinite(value) && value >= 0).length;
