@@ -82,7 +82,7 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
       const stat = analytics?.stats[String(item.id)];
       const art = itemImage(item);
       return <Link className="item-card" href={`/items/${item.id}`} key={item.id}>
-        <span className="item-card-art" aria-hidden="true" style={art ? { backgroundImage: `url("${art}")` } : undefined}>{!art && <i />}</span>
+        <span className="item-card-art" aria-hidden="true">{art ? <img src={art} alt="" /> : <i />}</span>
         <span className="item-card-content"><span className="item-card-meta"><span>{item.item_slot_type || "ITEM"} / T{item.item_tier ?? "—"}</span><b>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</b></span><strong>{item.name}</strong>
           <span className="item-card-description">{item.description?.desc ? plainText(item.description.desc) : ""}</span>
           {loading ? <span className="item-card-stat-state">Loading selected sample…</span> : stat ? <span className="item-card-stats"><span><small>PLAYER PICKS</small><b>{num(stat.matches)}</b></span><span><small>PICK RATE</small><b>{pct(stat.pickRate)}</b></span><span><small>WIN RATE</small><b>{pct(stat.winRate)}</b></span></span> : <span className="item-card-stat-state">No purchase statistics in this selection.</span>}

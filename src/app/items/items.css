@@ -11,7 +11,8 @@
 .items-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 14px; }
 .item-card { display: grid; min-width: 0; overflow: hidden; border: 1px solid #303233; background: #17191a; color: inherit; text-decoration: none; transition: border-color .15s ease,transform .15s ease; }
 .item-card:hover { border-color: #a65d49; transform: translateY(-2px); }
-.item-card-art { position: relative; display: grid; place-items: center; height: 116px; background: radial-gradient(circle,#272a2b,#17191a 68%); background-position: center; background-size: contain; background-repeat: no-repeat; border-bottom: 1px solid #292b2e; }
+.item-card-art { position: relative; display: grid; place-items: center; height: 116px; background: radial-gradient(circle,#272a2b,#17191a 68%); border-bottom: 1px solid #292b2e; }
+.item-card-art img { width: 78px; height: 78px; object-fit: contain; filter: drop-shadow(0 8px 10px #0008); }
 .item-card-art i, .item-detail-art i { width: 30px; height: 30px; border: 1px solid #393b3d; border-radius: 50%; }
 .item-card-content { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 12px; }
 .item-card-meta { display: flex; justify-content: space-between; gap: 8px; color: #868780; font-size: 8px; text-transform: uppercase; }
