@@ -174,7 +174,7 @@ export async function getCommunityBuilds(options: { start?: number; limit?: numb
   if (options.heroId !== undefined) params.set("hero_id", String(options.heroId));
   if (options.query?.trim()) params.set("search_name", options.query.trim().slice(0, 80));
   const [builds, heroes, items] = await Promise.all([
-    requestJson<CommunityBuild[]>(`/builds?${params}`), getHeroes(), getItemAssets(),
+    requestJson<CommunityBuild[]>(`/builds?${params}`), getHeroes(), getAllItemAssets(),
   ]);
   const heroById = new Map(heroes.flatMap((hero) => typeof hero.id === "number" ? [[hero.id, hero] as const] : []));
   const itemById = new Map(items.map((item) => [item.id, item]));
@@ -191,7 +191,7 @@ export async function getCommunityBuilds(options: { start?: number; limit?: numb
 
 export async function getCommunityBuild(heroId: number, buildId: number): Promise<BuildView> {
   const [build, heroes, items] = await Promise.all([
-    requestJson<CommunityBuild>(`/builds/${heroId}/${buildId}`), getHeroes(), getItemAssets(),
+    requestJson<CommunityBuild>(`/builds/${heroId}/${buildId}`), getHeroes(), getAllItemAssets(),
   ]);
   const hero = heroes.find((entry) => entry.id === heroId) ?? null;
   const itemById = new Map(items.map((item) => [item.id, item]));
@@ -205,4 +205,3 @@ export async function getCommunityBuild(heroId: number, buildId: number): Promis
     })),
   };
 }
-

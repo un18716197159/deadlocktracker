@@ -115,7 +115,7 @@ a { color: inherit; }
 /* Keep verified artwork compact and consistent with the original product density. */
 .item-card-art { height: 104px; background-color: #241d2c; background-size: contain; background-position: center; }
 .item-card-content { grid-template-rows: auto auto minmax(31px, auto) auto; }
-.hero-card-art { height: 168px; background-position: center; background-size: cover; }
+.hero-card-art { height: 190px; background-position: center 22%; background-size: cover; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 .app-shell { position: relative; min-height: 100vh; display: flex; isolation: isolate; background: var(--bg); }
@@ -444,7 +444,7 @@ footer i { display: inline-block; width: 5px; height: 5px; margin-left: 5px; bor
 .item-card-art { height: 96px; background-color: #211a2a; background-size: 62% auto; }
 .item-card { background: #19151e; }
 .item-card-content { min-height: 174px; }
-.hero-card-art { height: 168px; background-size: cover; }
+.hero-card-art { height: 190px; background-position: center 22%; background-size: cover; }
 .hero-playstyle { min-height: 28px; max-height: 29px; }
 .rank-badge { width: 32px; height: 32px; }
 .rank-badge-sm { width: 23px; height: 23px; }
