@@ -82,9 +82,12 @@
 .community-build-top p:not(.eyebrow) { overflow: hidden; margin: 0; color: #85847d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .community-build-meta { display: flex; flex-wrap: wrap; gap: 7px 13px; margin: 14px 0 10px; color: #85847d; font-size: 8px; }
 .community-build-items { display: grid; gap: 7px; padding: 10px 0; border-top: 1px solid #2b2d2e; border-bottom: 1px solid #2b2d2e; }
-.community-build-items > div { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 8px; }
+.community-build-items > div { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 8px; align-items: center; }
 .community-build-items small { color: var(--accent); font-size: 8px; }
-.community-build-items span { display: -webkit-box; overflow: hidden; color: #b7b2aa; font-size: 9px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.community-build-item-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 29px; }
+.community-build-item { display: block; width: 29px; height: 29px; border: 1px solid #3c463e; background: #222a24 center/contain no-repeat; box-shadow: 0 2px 6px #0005; }
+.community-build-item:hover { border-color: var(--accent-bright); }
+.community-build-item-empty { opacity: .35; border-style: dashed; }
 .build-details-link { display: inline-block; margin-top: 12px; color: #c9785d; font-size: 9px; text-decoration: none; }
 .build-detail-hero { padding: 23px; }
 .build-detail-hero > .eyebrow { margin: 0; color: var(--accent); }

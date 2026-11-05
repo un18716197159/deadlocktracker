@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { BuildView } from "../../lib/items-api";
-import { heroPortrait } from "../../lib/assets";
+import { heroPortrait, itemImage } from "../../lib/assets";
 
 type Props = { heroes: HeroAsset[]; initialHeroId: number | null };
 type Payload = { builds: BuildView[] };
@@ -39,7 +39,7 @@ export default function Builds({ heroes, initialHeroId }: Props) {
     {!loading && !error && rows.length > 0 && <div className="builds-grid">{rows.map(({ build, hero, categories }) => {
       const heroBuild = build.hero_build;
       const image = hero ? heroPortrait(hero) : null;
-      return <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}><div className="community-build-top"><span className="community-build-hero-art" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined} /><div><Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link><h2>{heroBuild.name}</h2><p>{heroBuild.description || "No build description provided."}</p></div></div><div className="community-build-meta"><span>{count(build.num_weekly_favorites)} weekly favorites</span><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div><div className="community-build-items">{categories.slice(0, 3).map((category) => <div key={category.name}><small>{category.name}</small><span>{category.items.slice(0, 4).map((entry) => entry.item?.name || `Item ${entry.item?.id ?? "unavailable"}`).join(" · ") || "No item entries"}</span></div>)}</div><Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link></article>;
+      return <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}><div className="community-build-top"><span className="community-build-hero-art" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined} /><div><Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link><h2>{heroBuild.name}</h2><p>{heroBuild.description || "No build description provided."}</p></div></div><div className="community-build-meta"><span>{count(build.num_weekly_favorites)} weekly favorites</span><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div><div className="community-build-items">{categories.slice(0, 3).map((category) => <div className="community-build-category" key={category.name}><small>{category.name}</small><span className="community-build-item-list">{category.items.slice(0, 4).map((entry, index) => entry.item ? <span className="community-build-item" key={`${entry.item.id}-${index}`} title={entry.item.name} style={itemImage(entry.item) ? { backgroundImage: `url("${itemImage(entry.item)}")` } : undefined} /> : <span className="community-build-item community-build-item-empty" key={`missing-${index}`} />)}</span></div>)}</div><Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link></article>;
     })}</div>}
     {!loading && !error && rows.length === 0 && <p className="api-message">No published builds matched these filters.</p>}
     <footer>DEADLOCK INTELLIGENCE · COMMUNITY BUILDS</footer>
