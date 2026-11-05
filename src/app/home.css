@@ -1,0 +1,11 @@
+.hero { position: relative; padding: clamp(36px, 7vw, 84px) 0 clamp(28px, 4vw, 44px); text-align: center; }
+.hero::before { position: absolute; z-index: -1; inset: -40px -10% auto; height: 340px; background: radial-gradient(ellipse at 50% 0, #70419f3d, transparent 65%); content: ""; pointer-events: none; }
+.hero h1 { max-width: 16ch; margin: 0 auto 14px; color: var(--ink); font: 700 clamp(34px, 6vw, 64px) / 1.04 var(--font-ui); letter-spacing: -.04em; }
+.hero h1 span { color: var(--accent-bright); }
+.hero-lede { max-width: 56ch; margin: 0 auto var(--space-8); color: var(--muted); font-size: clamp(14px, 1.6vw, 17px); line-height: 1.6; }
+.hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); margin: var(--space-6) 0 var(--space-10); }
+.hub-card { display: grid; gap: 6px; padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); color: var(--ink); text-decoration: none; transition: border-color .15s, background .15s, transform .15s; }
+.hub-card:hover { border-color: var(--accent); background: var(--panel-raised); transform: translateY(-2px); }
+.hub-card em { color: var(--accent-bright); font: normal 11px var(--font-data); letter-spacing: .12em; }
+.hub-card strong { font-size: 16px; }
+.hub-card span { color: var(--muted); font-size: 13px; line-height: 1.5; }

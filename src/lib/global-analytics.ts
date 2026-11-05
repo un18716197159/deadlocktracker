@@ -1,4 +1,5 @@
 import "server-only";
+import { cachedUpstream } from "./db/cache";
 import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 
 const API = "https://api.deadlock-api.com/v1/analytics";
@@ -57,13 +58,14 @@ function queryFor(filters: AnalyticsFilters, bucket = filters.bucket, range?: { 
 }
 
 async function get<T>(endpoint: string, filters: AnalyticsFilters, bucket = filters.bucket, range?: { start: number; end: number }): Promise<T[]> {
-  const response = await fetch(`${API}/${endpoint}?${queryFor(filters, bucket, range)}`, {
-    cache: "no-store", signal: AbortSignal.timeout(20_000), headers: deadlockHeaders(),
+  const url = `${API}/${endpoint}?${queryFor(filters, bucket, range)}`;
+  return cachedUpstream(`an:${url}`, 600, async () => {
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000), headers: deadlockHeaders() });
+    if (!response.ok) throw new Error(`Deadlock API request failed (${response.status}).`);
+    const data: unknown = await response.json();
+    if (!Array.isArray(data)) throw new Error("Deadlock API returned an invalid analytics response.");
+    return data as T[];
   });
-  if (!response.ok) throw new Error(`Deadlock API request failed (${response.status}).`);
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) throw new Error("Deadlock API returned an invalid analytics response.");
-  return data as T[];
 }
 
 export async function getHeroAnalytics(filters: AnalyticsFilters): Promise<HeroAnalytics[]> {

@@ -1,0 +1,18 @@
+.hero-search { position: relative; width: min(100%, 720px); margin: 0 auto; text-align: left; }
+.hero-search form { display: flex; align-items: center; gap: var(--space-3); height: 58px; padding: 0 8px 0 var(--space-5); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--surface-shadow); transition: border-color .15s; }
+.hero-search form:focus-within { border-color: var(--accent); }
+.hero-search form svg { width: 20px; height: 20px; flex: none; color: var(--subtle); }
+.hero-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: 500 16px var(--font-ui); }
+.hero-search input::placeholder { color: var(--subtle); }
+.hero-search kbd { padding: 3px 7px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--subtle); font: 10px var(--font-data); }
+.hero-search button { height: 42px; padding: 0 22px; border: 0; border-radius: var(--radius-sm); background: var(--accent); color: #fff; font: 700 13px var(--font-ui); cursor: pointer; transition: background .15s; }
+.hero-search button:hover { background: var(--accent-bright); color: var(--bg); }
+.hero-results { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; left: 0; max-height: 420px; overflow-y: auto; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--panel-raised); box-shadow: var(--surface-shadow); }
+.hero-result { display: flex; align-items: center; gap: var(--space-3); padding: 10px var(--space-4); border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.hero-result:last-child { border-bottom: 0; }
+.hero-result:hover { background: var(--panel-hover); }
+.hero-result-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--accent-dim) center / cover; font-weight: 700; }
+.hero-result strong { display: block; font-size: 14px; }
+.hero-result small { color: var(--muted); font-size: 12px; }
+.hero-results-note { margin: 0; padding: var(--space-4); color: var(--muted); font-size: 13px; }
+@media (max-width: 600px) { .hero-search kbd { display: none; } .hero-search form { height: 52px; padding-left: var(--space-4); } .hero-search button { padding: 0 16px; } }

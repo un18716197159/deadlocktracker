@@ -1,8 +1,9 @@
 import "server-only";
-import { cacheNowSeconds, deadlockHeaders } from "./upstream";
+import { cachedUpstream } from "./db/cache";
+import { cacheNowSeconds, DEADLOCK_API_ORIGIN, deadlockHeaders } from "./upstream";
 import { cacheLife } from "next/cache";
 
-const API_BASE = "https://api.deadlock-api.com";
+const API_BASE = DEADLOCK_API_ORIGIN;
 const REQUEST_TIMEOUT_MS = 12_000;
 const ASSET_CACHE_MS = 5 * 60 * 1000;
 const assetCache = new Map<string, { expiresAt: number; value: unknown }>();
@@ -58,7 +59,19 @@ export class DeadlockApiError extends Error {
   }
 }
 
-async function request<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+/** How long a response for this API path may be served from the database cache. */
+function ttlFor(path: string): number {
+  if (path.includes("/v1/assets/")) return 86_400;
+  if (path.includes("/steam-search") || path.includes("/leaderboard/")) return 600;
+  if (path.includes("/v1/players/")) return 120;
+  return 300;
+}
+
+function request<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+  return cachedUpstream(`dl:${path}`, ttlFor(path), () => requestUncached<T>(path, timeoutMs));
+}
+
+async function requestUncached<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {

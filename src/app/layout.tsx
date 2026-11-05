@@ -5,6 +5,8 @@ import "./heroes/heroes.css";
 import "./items/items.css";
 import "./leaderboards/leaderboards.css";
 import "./visual-system.css";
+import "./shell.css";
+import { siteUrl } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +19,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deadlock Intelligence",
+  metadataBase: new URL(siteUrl()),
+  title: { default: "Deadlock Intelligence", template: "%s · Deadlock Intelligence" },
   description: "Deadlock match analytics and meta intelligence.",
+  openGraph: { type: "website", siteName: "Deadlock Intelligence" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

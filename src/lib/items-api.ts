@@ -1,4 +1,5 @@
 import "server-only";
+import { cachedUpstream } from "./db/cache";
 import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 import { cacheLife } from "next/cache";
 import { getHeroes, type HeroAsset } from "./deadlock-api";
@@ -49,7 +50,11 @@ export type HeroBuild = { hero_id: number; hero_build_id: number; author_account
 export type CommunityBuild = { hero_build: HeroBuild; num_favorites?: number | null; num_weekly_favorites?: number | null; num_ignores?: number | null; num_reports?: number | null; rollup_category?: number | null };
 export type BuildView = { build: CommunityBuild; hero: HeroAsset | null; categories: Array<{ name: string; description?: string | null; items: Array<{ item: ItemAsset | null; annotation?: string | null; requiredFlexSlots?: number | null; sellPriority?: number | null }> }> };
 
-async function requestJson<T>(path: string, timeout = 20_000): Promise<T> {
+function requestJson<T>(path: string, timeout = 20_000): Promise<T> {
+  return cachedUpstream(`it:${path}`, 600, () => requestJsonUncached<T>(path, timeout));
+}
+
+async function requestJsonUncached<T>(path: string, timeout = 20_000): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeout), headers: deadlockHeaders() });

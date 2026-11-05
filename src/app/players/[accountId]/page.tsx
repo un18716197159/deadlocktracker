@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -19,6 +20,14 @@ import {
 } from "../../../lib/deadlock-api";
 
 type Props = { params: Promise<{ accountId: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { accountId } = await params;
+  return {
+    title: `Player ${accountId}`,
+    description: `Deadlock rank, match history and hero stats for player ${accountId}.`,
+  };
+}
 
 function outcome(value: number | undefined) {
   if (value === 1) return { label: "Victory", className: "win" };
