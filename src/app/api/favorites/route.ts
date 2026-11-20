@@ -15,10 +15,10 @@ async function owner() {
   }
 }
 
-/** The signed-in user's saved players. */
+/** The signed-in user's saved players. Guests get an empty list (not a 401), so pages log no errors. */
 export async function GET() {
   const me = await owner();
-  if (me === null) return NextResponse.json({ error: "Sign in required." }, { status: 401, headers });
+  if (me === null) return NextResponse.json({ signedIn: false, favorites: [] }, { headers });
   try {
     const rows = await getDb().select().from(schema.favorites).where(eq(schema.favorites.ownerAccountId, me)).orderBy(desc(schema.favorites.createdAt));
     return NextResponse.json({ favorites: rows.map((row) => ({ accountId: row.playerAccountId, name: row.name, avatar: row.avatar })) }, { headers });

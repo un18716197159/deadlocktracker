@@ -32,5 +32,8 @@ const uk: Partial<Record<MessageKey, string>> = {
   "compare.title": "Порівняння гравців", "compare.subtitle": "Порівняйте історію матчів і гру на героях за один і той самий період.",
   "compare.playerA": "Гравець A", "compare.playerB": "Гравець B", "compare.window": "Період", "compare.choose": "Виберіть двох гравців для порівняння",
   "compare.rank": "Поточний ранг", "compare.scored": "Враховані матчі", "compare.wins": "Перемоги", "compare.losses": "Поразки", "compare.winRate": "Вінрейт", "compare.kda": "Сер. В / С / П", "compare.heroes": "Улюблені герої",
+  "profile.rankHistory": "Історія рангу", "profile.rankLast": "останні {n} рейтингових", "profile.rankChange": "Зміна", "profile.divisionsShort": "див.", "profile.rankPeak": "Пік", "profile.rankRecord": "У рейтингових",
+  "hero.buildOrder": "Порядок збірки", "hero.buildOrderNote": "Предмети з найкращим вінрейтом на {hero}, якщо купити їх у цей період (30 днів). Предмети з попередніх етапів не повторюються.", "hero.phaseEarly": "Початок гри", "hero.phaseMid": "Середина", "hero.phaseLate": "Пізня гра",
+  "compare.shared": "Спільні матчі", "compare.sharedCount": "спільних матчів", "compare.noShared": "У цих гравців немає спільних матчів за вибраний період.", "compare.together": "В одній команді", "compare.against": "Один проти одного", "compare.togetherShort": "Разом", "compare.againstShort": "Проти", "compare.won": "переміг",
 };
 export default uk;

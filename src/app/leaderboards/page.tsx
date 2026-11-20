@@ -3,8 +3,9 @@ import { Suspense } from "react";
 import AppShell from "../components/app-shell";
 import { getHeroes, getRankedSeasons } from "../../lib/deadlock-api";
 import Leaderboards from "./leaderboards";
+import { L } from "../../lib/i18n/provider";
 
-export const metadata = { title: "Leaderboards | Deadlock Intelligence" };
+export const metadata = { title: "Leaderboards | Deadlock Tracker" };
 
 async function LeaderboardContent() {
   await connection();
@@ -13,5 +14,5 @@ async function LeaderboardContent() {
 }
 
 export default function Page() {
-  return <AppShell active="Leaderboards"><Suspense fallback={<main className="content-inner leaderboard-page"><p className="api-message" role="status">Loading leaderboard filters…</p></main>}><LeaderboardContent /></Suspense></AppShell>;
+  return <AppShell active="Leaderboards"><Suspense fallback={<main className="content-inner leaderboard-page"><p className="api-message" role="status"><L>Loading leaderboard filters…</L></p></main>}><LeaderboardContent /></Suspense></AppShell>;
 }

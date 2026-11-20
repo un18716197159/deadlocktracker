@@ -7,7 +7,7 @@ For å finne informasjon om spelarar og statistikk undersøkte eg dei opne kjeld
 
 ---
 
-## Setup (Deadlock Intelligence)
+## Setup (Deadlock Tracker)
 
 ```bash
 npm install

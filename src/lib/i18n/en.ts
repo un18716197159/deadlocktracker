@@ -35,6 +35,9 @@ const en = {
   "compare.title": "Player comparison", "compare.subtitle": "Compare scored match history and hero performance under the same time window.",
   "compare.playerA": "Player A", "compare.playerB": "Player B", "compare.window": "Time window", "compare.choose": "Choose two players to compare",
   "compare.rank": "Current rank", "compare.scored": "Scored matches", "compare.wins": "Wins", "compare.losses": "Losses", "compare.winRate": "Win rate", "compare.kda": "Avg K / D / A", "compare.heroes": "Favorite heroes",
+  "profile.rankHistory": "Rank history", "profile.rankLast": "last {n} ranked matches", "profile.rankChange": "Change", "profile.divisionsShort": "div.", "profile.rankPeak": "Peak", "profile.rankRecord": "Ranked record",
+  "hero.buildOrder": "Build order", "hero.buildOrderNote": "Items with the best win rate on {hero} when bought in each phase (last 30 days). Earlier picks are not repeated.", "hero.phaseEarly": "Early game", "hero.phaseMid": "Mid game", "hero.phaseLate": "Late game",
+  "compare.shared": "Shared matches", "compare.sharedCount": "shared", "compare.noShared": "These players have no matches together in this time window.", "compare.together": "As teammates", "compare.against": "Head to head", "compare.togetherShort": "Team", "compare.againstShort": "Versus", "compare.won": "won",
 } as const;
 export type MessageKey = keyof typeof en;
 export default en;

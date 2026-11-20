@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_LOCALE, isLocale, matchLocale, translate, type Locale, type MessageKey } from "./messages";
+import { translatePhrase } from "./phrases";
 
 type Vars = Record<string, string | number>;
-type Context = { locale: Locale; setLocale: (locale: Locale) => void; t: (key: MessageKey, vars?: Vars) => string };
-const I18nContext = createContext<Context>({ locale: DEFAULT_LOCALE, setLocale: () => undefined, t: (key, vars) => translate(DEFAULT_LOCALE, key, vars) });
+type Context = { locale: Locale; setLocale: (locale: Locale) => void; t: (key: MessageKey, vars?: Vars) => string; p: (english: string, vars?: Vars) => string };
+const I18nContext = createContext<Context>({ locale: DEFAULT_LOCALE, setLocale: () => undefined, t: (key, vars) => translate(DEFAULT_LOCALE, key, vars), p: (english, vars) => translatePhrase(DEFAULT_LOCALE, english, vars) });
 const STORAGE_KEY = "dt_lang";
 function writeCookie(value: Locale) {
   try {
@@ -29,6 +30,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     } catch {
       next = matchLocale([navigator.language]);
     }
+    // Intentional: the first render is always English (it must match the server HTML); the saved
+    // or browser language can only be read after mount, so it is applied here once.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocaleState(next);
     const hadCookie = document.cookie.includes("dt_lang=");
     writeCookie(next);
@@ -52,7 +56,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const t = useCallback((key: MessageKey, vars?: Vars) => translate(locale, key, vars), [locale]);
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  const p = useCallback((english: string, vars?: Vars) => translatePhrase(locale, english, vars), [locale]);
+  const value = useMemo(() => ({ locale, setLocale, t, p }), [locale, setLocale, t, p]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
@@ -64,4 +69,10 @@ export function useI18n() {
 export function T({ k, vars }: { k: MessageKey; vars?: Vars }) {
   const { t } = useI18n();
   return <>{t(k, vars)}</>;
+}
+
+/** A page caption translated by its English text (see phrases.ts): <L>Win rate</L> */
+export function L({ children, vars }: { children: string; vars?: Vars }) {
+  const { p } = useI18n();
+  return <>{p(children, vars)}</>;
 }

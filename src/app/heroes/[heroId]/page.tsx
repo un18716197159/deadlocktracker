@@ -7,8 +7,8 @@ import { heroBackground, heroCardImage, heroPortrait } from "../../../lib/assets
 import { RichText } from "../../../lib/rich-text";
 import { apiLanguage, getRequestLocale } from "../../../lib/i18n/server";
 import { getHeroCounters, getHeroSynergies, getHeroes, getHeroesIn, type HeroMatchup } from "../../../lib/deadlock-api";
-import { getAllItemAssets, getItemAnalytics } from "../../../lib/items-api";
-import { T } from "../../../lib/i18n/provider";
+import { getAllItemAssets, getHeroItemPhases, getItemAnalytics } from "../../../lib/items-api";
+import { T, L } from "../../../lib/i18n/provider";
 import ItemTile from "../../components/item-tile";
 import "./hero-detail.css";
 
@@ -17,11 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ heroId: s
   const id = Number(heroId);
   try {
     const row = Number.isSafeInteger(id) ? (await catalog()).find((entry) => entry.hero.id === id) : undefined;
-    if (row?.hero.name) return { title: `${row.hero.name} — Deadlock hero stats, abilities & builds | Deadlock Intelligence` };
+    if (row?.hero.name) return { title: `${row.hero.name} — Deadlock hero stats, abilities & builds | Deadlock Tracker` };
   } catch {
     /* fall through */
   }
-  return { title: `Hero ${heroId} | Deadlock Intelligence` };
+  return { title: `Hero ${heroId} | Deadlock Tracker` };
 }
 
 const STAT_LABELS: Record<string, string> = {
@@ -102,6 +102,58 @@ async function HeroItems({ heroId }: { heroId: number }) {
   );
 }
 
+/**
+ * Build order helper: for each game phase, the items with the best win rate when bought in that phase.
+ * Only items with a real sample (at least 15% of the phase's most bought item) count, and an item shown
+ * in an earlier phase is not repeated, so the three rows read as a buy order.
+ */
+async function HeroBuildOrder({ heroId, heroName }: { heroId: number; heroName: string }) {
+  const [phases, assets] = await Promise.allSettled([getHeroItemPhases(heroId), getAllItemAssets()]);
+  if (phases.status === "rejected" || assets.status === "rejected") return null;
+  const byId = new Map(assets.value.map((item) => [item.id, item]));
+  const shown = new Set<number>();
+  const rows = phases.value.map((phase) => {
+    const candidates = phase.items.flatMap((row) => {
+      const item = byId.get(row.itemId);
+      return item && item.type === "upgrade" && item.shopable ? [{ item, row, winRate: (row.wins / (row.wins + row.losses)) * 100 }] : [];
+    });
+    const maxMatches = Math.max(1, ...candidates.map((entry) => entry.row.matches));
+    const picks = candidates
+      .filter((entry) => entry.row.matches >= Math.max(30, maxMatches * 0.15) && !shown.has(entry.item.id))
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 6);
+    picks.forEach((entry) => shown.add(entry.item.id));
+    const souls = picks.reduce((sum, entry) => sum + (entry.item.cost ?? 0), 0);
+    return { phase, picks, souls };
+  });
+  if (!rows.some((row) => row.picks.length)) return null;
+  const phaseKey = { early: "hero.phaseEarly", mid: "hero.phaseMid", late: "hero.phaseLate" } as const;
+  return (
+    <section className="hp-panel hp-build-order">
+      <h2><T k="hero.buildOrder" /></h2>
+      <p className="muted hp-note"><T k="hero.buildOrderNote" vars={{ hero: heroName }} /></p>
+      <ol className="hp-bo">
+        {rows.map(({ phase, picks, souls }) => picks.length > 0 && (
+          <li key={phase.key} className="hp-bo-phase">
+            <div className="hp-bo-label">
+              <strong><T k={phaseKey[phase.key]} /></strong>
+              <small>{phase.to === null ? <L vars={{ n: phase.from / 60 }}>{"{n}+ min"}</L> : <L vars={{ a: phase.from / 60, b: phase.to / 60 }}>{"{a}–{b} min"}</L>}{souls > 0 && <> · <L vars={{ n: souls.toLocaleString() }}>{"{n} souls"}</L></>}</small>
+            </div>
+            <div className="hp-bo-items">
+              {picks.map(({ item, row, winRate }) => (
+                <Link href={`/items/${item.id}`} className="hp-bo-item" key={item.id} title={`${item.name} · ${winRate.toFixed(1)}% · ${row.matches.toLocaleString()} matches`}>
+                  <ItemTile item={item} size="md" />
+                  <b data-good={winRate >= 50}>{winRate.toFixed(0)}%</b>
+                </Link>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function MatchupList({ rows, names, images, label }: { rows: HeroMatchup[]; names: Map<number, string>; images: Map<number, string>; label: ReactNode }) {
   if (!rows.length) return null;
   return (
@@ -168,7 +220,7 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
 
   return (
     <main className="content-inner hero-page">
-      <Link className="back-link" href="/heroes">← All heroes</Link>
+      <Link className="back-link" href="/heroes"><L>← All heroes</L></Link>
 
       <section className="hp-header" style={banner ? { backgroundImage: `linear-gradient(90deg, #0d0f14 8%, #0d0f14cc 45%, #0d0f1466), url("${banner}")` } : undefined}>
         {card && <span className="hp-portrait" style={{ backgroundImage: `url("${card}")` }} aria-hidden="true" />}
@@ -177,22 +229,22 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
           <h1>{hero.name}</h1>
           {hero.description?.playstyle && <RichText text={hero.description.playstyle} className="hp-playstyle" />}
           <div className="hp-links">
-            <Link href={`/builds?heroId=${id}`}>Community builds</Link>
-            <Link href={`/items?heroId=${id}`}>Item stats</Link>
+            <Link href={`/builds?heroId=${id}`}><L>Community builds</L></Link>
+            <Link href={`/items?heroId=${id}`}><L>Item stats</L></Link>
           </div>
         </div>
         <div className="hp-kpis">
-          <div><small>Win rate</small><strong>{win === null ? "—" : `${win.toFixed(1)}%`}</strong>{winRank > 0 && <span>#{winRank} of {slotWins.length}</span>}</div>
-          <div><small>Pick rate</small><strong>{pick === null ? "—" : `${pick.toFixed(1)}%`}</strong></div>
-          <div><small>Matches</small><strong>{stat?.matches.toLocaleString() ?? "—"}</strong></div>
+          <div><small><L>Win rate</L></small><strong>{win === null ? "—" : `${win.toFixed(1)}%`}</strong>{winRank > 0 && <span>#{winRank} of {slotWins.length}</span>}</div>
+          <div><small><L>Pick rate</L></small><strong>{pick === null ? "—" : `${pick.toFixed(1)}%`}</strong></div>
+          <div><small><L>Matches</L></small><strong>{stat?.matches.toLocaleString() ?? "—"}</strong></div>
         </div>
       </section>
 
       <div className="hp-columns">
         <div className="hp-main">
           <section className="hp-panel">
-            <h2>Abilities</h2>
-            {!list.length ? <p className="muted">No ability data returned by the API.</p> : (
+            <h2><L>Abilities</L></h2>
+            {!list.length ? <p className="muted"><L>Abilities are not available right now.</L></p> : (
               <ol className="hp-abilities">
                 {list.map((ability, index) => {
                   const image = ability.image_webp || ability.image;
@@ -204,8 +256,8 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
                       <div className="hp-ability-body">
                         <h3><span>{index + 1}</span>{ability.name || "Unnamed ability"}</h3>
                         <RichText text={ability.description?.desc} />
-                        {ability.description?.active && <div className="hp-effect"><b>Active</b><RichText text={ability.description.active} /></div>}
-                        {ability.description?.passive && <div className="hp-effect"><b>Passive</b><RichText text={ability.description.passive} /></div>}
+                        {ability.description?.active && <div className="hp-effect"><b><L>Active</L></b><RichText text={ability.description.active} /></div>}
+                        {ability.description?.passive && <div className="hp-effect"><b><L>Passive</L></b><RichText text={ability.description.passive} /></div>}
                         {props.length > 0 && <dl className="hp-props">{props.map((p) => <div key={p.key}><dt>{p.label}</dt><dd>{p.value}</dd></div>)}</dl>}
                         {upgrades.length > 0 && <ul className="hp-upgrades">{upgrades.slice(0, 3).map((u, i) => <li key={i}><b>T{i + 1}</b><RichText text={u} /></li>)}</ul>}
                       </div>
@@ -215,6 +267,7 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
               </ol>
             )}
           </section>
+          <Suspense fallback={null}><HeroBuildOrder heroId={id} heroName={hero.name ?? "this hero"} /></Suspense>
           <Suspense fallback={null}><HeroItems heroId={id} /></Suspense>
         </div>
 
@@ -222,22 +275,22 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
           <Suspense fallback={null}><HeroMatchups heroId={id} /></Suspense>
           {stats.length > 0 && (
             <section className="hp-panel">
-              <h2>Base stats</h2>
-              <dl className="hp-stats">{stats.map((s) => <div key={s.key}><dt>{label(s.key)}</dt><dd>{s.value}</dd></div>)}</dl>
+              <h2><L>Base stats</L></h2>
+              <dl className="hp-stats">{stats.map((s) => <div key={s.key}><dt><L>{label(s.key)}</L></dt><dd>{s.value}</dd></div>)}</dl>
             </section>
           )}
           {hero.description?.lore && (
             <section className="hp-panel">
-              <h2>Lore</h2>
+              <h2><L>Lore</L></h2>
               <RichText text={hero.description.lore} className="hp-lore" />
             </section>
           )}
           <section className="hp-panel">
-            <h2>Explore</h2>
+            <h2><L>Explore</L></h2>
             <div className="hp-explore">
-              <Link href={`/items?heroId=${id}`}>Best items for {hero.name} →</Link>
-              <Link href={`/builds?heroId=${id}`}>Community builds →</Link>
-              <Link href="/leaderboards">Leaderboards →</Link>
+              <Link href={`/items?heroId=${id}`}><L vars={{ hero: hero.name ?? "" }}>{"Best items for {hero} →"}</L></Link>
+              <Link href={`/builds?heroId=${id}`}><L>Community builds →</L></Link>
+              <Link href="/leaderboards"><L>Leaderboards →</L></Link>
             </div>
           </section>
         </aside>
@@ -247,5 +300,5 @@ async function HeroContent({ params }: { params: Promise<{ heroId: string }> }) 
 }
 
 export default async function Page({ params }: { params: Promise<{ heroId: string }> }) {
-  return <AppShell active="Heroes"><Suspense fallback={<main className="content-inner hero-page"><p className="api-message" role="status">Loading hero data…</p></main>}><HeroContent params={params} /></Suspense></AppShell>;
+  return <AppShell active="Heroes"><Suspense fallback={<main className="content-inner hero-page"><p className="api-message" role="status"><L>Loading hero data…</L></p></main>}><HeroContent params={params} /></Suspense></AppShell>;
 }

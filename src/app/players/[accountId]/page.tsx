@@ -3,10 +3,11 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { T } from "../../../lib/i18n/provider";
+import { T, L } from "../../../lib/i18n/provider";
 import { FavoriteButton } from "../../components/favorites";
 import { RecordVisit } from "../../components/recent-players";
 import FormCharts from "./form-charts";
+import RankHistory from "./rank-history";
 import "./player-page.css";
 import AppShell from "../../components/app-shell";
 import RankBadge from "../../components/rank-badge";
@@ -28,9 +29,13 @@ type Props = { params: Promise<{ accountId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { accountId } = await params;
+  const id = parseAccountId(accountId);
+  // The Steam name, from the same cached request the page makes; the account ID if it is unavailable.
+  const name = id === null ? undefined : (await getSteamProfiles([id]).catch(() => []))[0]?.personaname?.trim();
+  const who = name || `Player ${accountId}`;
   return {
-    title: `Player ${accountId} | Deadlock Intelligence`,
-    description: `Deadlock rank, match history and hero stats for player ${accountId}.`,
+    title: `${who} — Deadlock stats | Deadlock Tracker`,
+    description: `Deadlock rank, rank history, match history and hero stats for ${who}.`,
   };
 }
 
@@ -91,7 +96,7 @@ async function PlayerContent({ accountId }: { accountId: number }) {
       </div>
     </section>
 
-    {historyError ? <p className="api-message error-message">Match history is temporarily unavailable. Try again in a minute.</p> : (
+    {historyError ? <p className="api-message error-message"><L>Match history is temporarily unavailable. Try again in a minute.</L></p> : (
       <div className="pp-kpis">
         <div><small><T k="profile.matches" /></small><strong>{formatNumber(matches.length)}</strong><span><T k="profile.recentHistory" /></span></div>
         <div><small><T k="profile.winRate" /></small><strong>{winRate}</strong><span>{scoredMatches.length ? `${wins}W ${losses}L` : <T k="profile.noScored" />}</span></div>
@@ -100,19 +105,20 @@ async function PlayerContent({ accountId }: { accountId: number }) {
       </div>
     )}
 
+    {!historyError && <RankHistory matches={matches} ranks={ranks} />}
     {!historyError && <FormCharts matches={matches} heroNames={heroNames} />}
 
     <div className="pp-columns">
       <section className="pp-panel">
         <h2><T k="profile.heroes" /></h2>
-        {heroStatsResult.status === "rejected" ? <p className="muted">Per-hero statistics are unavailable right now.</p> : heroRows.length === 0 ? <p className="muted"><T k="profile.noHeroes" /></p> : (
+        {heroStatsResult.status === "rejected" ? <p className="muted"><L>Per-hero statistics are unavailable right now.</L></p> : heroRows.length === 0 ? <p className="muted"><T k="profile.noHeroes" /></p> : (
           <div className="pp-heroes">{heroRows.slice(0, 12).map((stats) => <PlayerHeroCard key={stats.hero_id} stats={stats} name={heroNames[String(stats.hero_id)] || `Hero ${stats.hero_id}`} image={heroImages[String(stats.hero_id)]} heroId={stats.hero_id as number} />)}</div>
         )}
       </section>
 
       <section className="pp-panel">
         <h2><T k="profile.recent" /></h2>
-        {historyError ? <p className="muted">No matches can be shown until the API responds.</p> : !matches.length ? <p className="muted"><T k="profile.noMatches" /></p> : (
+        {historyError ? <p className="muted"><L>Matches are not available right now.</L></p> : !matches.length ? <p className="muted"><T k="profile.noMatches" /></p> : (
           <div className="pp-matches">{matches.map((match, index) => <MatchRow accountId={accountId} match={match} heroName={typeof match.hero_id === "number" ? heroNames[String(match.hero_id)] || `Hero ${match.hero_id}` : "Unknown hero"} heroImage={typeof match.hero_id === "number" ? heroImages[String(match.hero_id)] : undefined} key={match.match_id ?? `${match.start_time}-${index}`} />)}</div>
         )}
       </section>
@@ -151,5 +157,5 @@ async function PlayerPageContent({ params }: Props) {
 }
 
 export default function PlayerPage({ params }: Props) {
-  return <AppShell active="Players"><Suspense fallback={<main className="content-inner player-page"><p className="api-message" role="status">Loading player profile…</p></main>}><PlayerPageContent params={params} /></Suspense></AppShell>;
+  return <AppShell active="Players"><Suspense fallback={<main className="content-inner player-page"><p className="api-message" role="status"><L>Loading player profile…</L></p></main>}><PlayerPageContent params={params} /></Suspense></AppShell>;
 }

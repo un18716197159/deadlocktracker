@@ -11,7 +11,7 @@ type Status = "idle" | "loading" | "done" | "error";
 
 export default function HeroSearch() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, p } = useI18n();
   const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -19,16 +19,22 @@ export default function HeroSearch() {
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
 
+  // Typing resets the results right away; the effect below only does the (debounced) request.
+  const changeQuery = (value: string) => {
+    setQuery(value);
+    if (value.trim().length < 2) {
+      setPlayers([]);
+      setStatus("idle");
+    } else {
+      setStatus("loading");
+    }
+  };
+
   // Live search, debounced.
   useEffect(() => {
     const term = query.trim();
-    if (term.length < 2) {
-      setPlayers([]);
-      setStatus("idle");
-      return;
-    }
+    if (term.length < 2) return;
     const controller = new AbortController();
-    setStatus("loading");
     const timer = setTimeout(() => {
       fetch(`/api/players/search?q=${encodeURIComponent(term)}`, { signal: controller.signal })
         .then(async (response) => {
@@ -88,11 +94,11 @@ export default function HeroSearch() {
         <input
           ref={input}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => changeQuery(event.target.value)}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={t("search.placeholder")}
-          aria-label="Search a Steam name or account ID"
+          aria-label={p("Search a Steam name or account ID")}
           autoComplete="off"
         />
         <kbd>Ctrl K</kbd>

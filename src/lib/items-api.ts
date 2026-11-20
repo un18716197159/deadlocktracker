@@ -25,6 +25,8 @@ export type ItemAsset = {
   item_tier?: number;
   cost?: number | null;
   shopable?: boolean;
+  /** True for items removed from the game (still listed in old community builds). */
+  disabled?: boolean;
   image?: string | null;
   image_webp?: string | null;
   description?: { desc?: string | null; active?: string | null; passive?: string | null } | null;
@@ -130,6 +132,36 @@ export async function getItemAnalytics(filters: ItemAnalyticsFilters, heroId?: n
     };
   }
   return { stats, playerMatches, heroScope: heroId ?? null };
+}
+
+/** Game phases for the build order helper, by when the item was bought (seconds of game time). */
+export const BUILD_PHASES = [
+  { key: "early", from: 0, to: 600 },
+  { key: "mid", from: 600, to: 1200 },
+  { key: "late", from: 1200, to: null },
+] as const;
+export type BuildPhaseKey = (typeof BUILD_PHASES)[number]["key"];
+export type BuildPhaseStats = { key: BuildPhaseKey; from: number; to: number | null; items: Array<{ itemId: number; wins: number; losses: number; matches: number }> };
+
+/** Win rate of each item on a hero, split by the phase it was bought in (last 30 days, normal mode). */
+export async function getHeroItemPhases(heroId: number): Promise<BuildPhaseStats[]> {
+  "use cache";
+  cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+  return Promise.all(BUILD_PHASES.map(async (phase) => {
+    const params = new URLSearchParams({ bucket: "no_bucket", game_mode: "normal", match_mode: "ranked,unranked", hero_ids: String(heroId), min_matches: "1" });
+    params.set("min_unix_timestamp", String(cacheNowSeconds() - 30 * DAY));
+    params.set("min_bought_at_s", String(phase.from));
+    if (phase.to !== null) params.set("max_bought_at_s", String(phase.to));
+    const rows = await requestJson<ItemStat[]>(`/analytics/item-stats?${params}`);
+    return {
+      key: phase.key,
+      from: phase.from,
+      to: phase.to,
+      items: (Array.isArray(rows) ? rows : []).flatMap((row) => Number.isSafeInteger(row.item_id) && Number.isFinite(row.wins) && Number.isFinite(row.losses) && row.wins + row.losses > 0
+        ? [{ itemId: row.item_id, wins: row.wins, losses: row.losses, matches: row.matches }]
+        : []),
+    };
+  }));
 }
 
 export async function getItemHeroAnalytics(itemId: number, filters: ItemAnalyticsFilters): Promise<ItemHeroStat[]> {

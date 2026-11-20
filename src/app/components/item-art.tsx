@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { isColorItemIcon, itemImage } from "../../lib/assets";
 
-type Art = { name?: string | null; image?: string | null; image_webp?: string | null };
+type Art = { name?: string | null; image?: string | null; image_webp?: string | null; disabled?: boolean | null };
 
 /** Item icon: current local in-game icon first, API image if the local file does not exist. */
 export default function ItemArt({ item, alt = "" }: { item: Art; alt?: string }) {

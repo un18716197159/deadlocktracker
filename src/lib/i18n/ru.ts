@@ -36,5 +36,8 @@ const ru: Partial<Record<MessageKey, string>> = {
   "compare.title": "Сравнение игроков", "compare.subtitle": "Сравните историю матчей и игру на героях за один и тот же период.",
   "compare.playerA": "Игрок A", "compare.playerB": "Игрок B", "compare.window": "Период", "compare.choose": "Выберите двух игроков для сравнения",
   "compare.rank": "Текущий ранг", "compare.scored": "Учтённые матчи", "compare.wins": "Победы", "compare.losses": "Поражения", "compare.winRate": "Винрейт", "compare.kda": "Сред. У / С / П", "compare.heroes": "Любимые герои",
+  "profile.rankHistory": "История ранга", "profile.rankLast": "последние {n} рейтинговых", "profile.rankChange": "Изменение", "profile.divisionsShort": "див.", "profile.rankPeak": "Пик", "profile.rankRecord": "В рейтинговых",
+  "hero.buildOrder": "Порядок сборки", "hero.buildOrderNote": "Предметы с лучшим винрейтом на {hero}, если купить их в этот период (30 дней). Предметы из прошлых этапов не повторяются.", "hero.phaseEarly": "Начало игры", "hero.phaseMid": "Середина", "hero.phaseLate": "Поздняя игра",
+  "compare.shared": "Общие матчи", "compare.sharedCount": "общих матчей", "compare.noShared": "У этих игроков нет общих матчей за выбранный период.", "compare.together": "В одной команде", "compare.against": "Друг против друга", "compare.togetherShort": "Вместе", "compare.againstShort": "Против", "compare.won": "победил",
 };
 export default ru;

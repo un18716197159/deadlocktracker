@@ -3,8 +3,9 @@ import { Suspense } from "react";
 import AppShell from "../components/app-shell";
 import { getSteamProfiles, type SteamProfile } from "../../lib/deadlock-api";
 import Compare from "./compare";
+import { L } from "../../lib/i18n/provider";
 
-export const metadata = { title: "Player Comparison | Deadlock Intelligence" };
+export const metadata = { title: "Player Comparison | Deadlock Tracker" };
 type Props = { searchParams: Promise<{ left?: string; right?: string }> };
 
 async function ComparisonPage({ searchParams }: Props) {
@@ -22,5 +23,5 @@ async function ComparisonPage({ searchParams }: Props) {
 }
 
 export default function Page(props: Props) {
-  return <AppShell active="Compare"><Suspense fallback={<main className="content-inner compare-page"><p className="api-message" role="status">Loading player comparison…</p></main>}><ComparisonPage {...props} /></Suspense></AppShell>;
+  return <AppShell active="Compare"><Suspense fallback={<main className="content-inner compare-page"><p className="api-message" role="status"><L>Loading player comparison…</L></p></main>}><ComparisonPage {...props} /></Suspense></AppShell>;
 }

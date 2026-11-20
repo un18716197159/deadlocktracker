@@ -5,7 +5,8 @@
 .topnav { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--line); background: rgb(12 10 15 / 88%); backdrop-filter: blur(14px); }
 .topnav-inner { display: flex; align-items: center; gap: var(--space-4); width: min(100%, 1500px); height: 60px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 58px); }
 .topnav .brand { flex: none; min-height: 0; margin: 0; }
-.topnav-links { display: flex; align-items: stretch; gap: 2px; height: 100%; margin-left: var(--space-4); overflow-x: auto; scrollbar-width: none; }
+/* min-width: 0 lets the links shrink and scroll sideways instead of pushing Sign in off screen. */
+.topnav-links { display: flex; flex: 0 1 auto; min-width: 0; align-items: stretch; gap: 2px; height: 100%; margin-left: var(--space-4); overflow-x: auto; scrollbar-width: none; }
 .topnav-links::-webkit-scrollbar { display: none; }
 .topnav-link { position: relative; display: inline-flex; align-items: center; padding: 0 14px; color: var(--muted); font: 600 13px var(--font-ui); text-decoration: none; white-space: nowrap; transition: color .15s; }
 .topnav-link:hover { color: var(--ink); }
@@ -17,6 +18,19 @@
   .topnav-inner { flex-wrap: wrap; row-gap: 0; height: auto; padding-top: 10px; padding-bottom: 0; }
   .topnav .brand { order: 1; }
   .topnav-spacer { order: 2; }
+  .topnav .lang-switch { order: 3; }
   .topnav .account-menu { order: 3; min-width: 0; }
   .topnav-links { order: 4; flex: 0 0 100%; height: 44px; margin-left: 0; }
+}
+/* Phones: logo, language and Steam button must fit one row. */
+@media (max-width: 520px) {
+  .topnav-inner { gap: 6px; }
+  .topnav .brand-name { font-size: 12px; letter-spacing: .04em; }
+  .topnav .brand-name b { margin-left: .3em; letter-spacing: .1em; }
+  .topnav .brand { gap: 7px; }
+  .topnav .logo-mark { width: 26px; height: 26px; }
+  .topnav .lang-switch svg { display: none; }
+  .topnav .lang-switch select { max-width: 82px; }
+  .topnav .steam-signin span { display: none; }
+  .topnav .account-placeholder { width: 36px; }
 }

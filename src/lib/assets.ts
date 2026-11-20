@@ -11,7 +11,7 @@ export type HeroAssetLike = {
   } | null;
 };
 
-export type ItemAssetLike = { name?: string | null; image_webp?: string | null; image?: string | null };
+export type ItemAssetLike = { name?: string | null; image_webp?: string | null; image?: string | null; disabled?: boolean | null };
 export type RankAssetLike = { images?: Record<string, string | null> };
 
 function firstAsset(...values: Array<string | null | undefined>) {
@@ -30,8 +30,13 @@ export function heroBackground(hero: HeroAssetLike) {
   return firstAsset(hero.images?.background_image_webp, hero.images?.background_image, heroCardImage(hero));
 }
 
-/** Prefers the current in-game icon we host ourselves; falls back to the Deadlock API image. */
+/**
+ * Prefers the current in-game icon we host ourselves; falls back to the Deadlock API image.
+ * Items removed from the game (disabled) have no local icon, so they use the API image directly
+ * instead of requesting a file that does not exist (old community builds still list them).
+ */
 export function itemImage(item: ItemAssetLike) {
+  if (item.disabled === true) return firstAsset(item.image_webp, item.image);
   return localItemIcon(item.name) ?? firstAsset(item.image_webp, item.image);
 }
 

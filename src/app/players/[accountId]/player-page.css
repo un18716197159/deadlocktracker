@@ -37,6 +37,23 @@ a.pp-match:hover { filter: brightness(1.25); }
 .pp-form-strip { display: flex; gap: 4px; }
 .pp-form-strip i { flex: 1; max-width: 30px; height: 26px; border-radius: 4px; background: #d9534f; } .pp-form-strip i[data-win="true"] { background: #4caf7a; }
 .pp-chart { width: 100%; height: 110px; display: block; }
+/* Rank history: tier bands with names, a line of rank after each ranked match, win/loss dots. */
+.pp-rh-chart { margin-top: 4px; }
+.pp-rh-plot { position: relative; height: 170px; border-radius: 6px; background: #12151b; overflow: hidden; }
+.pp-rh-area { position: absolute; inset: 10px 14px; }
+.pp-rh-area svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pp-rh-band { position: absolute; left: -14px; right: -14px; border-top: 1px solid #232733; }
+.pp-rh-band[data-odd="true"] { background: rgba(255, 255, 255, .015); }
+.pp-rh-band span { position: absolute; top: 4px; left: 8px; color: var(--subtle); font: 600 10px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
+.pp-rh-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #d9534f; box-shadow: 0 0 0 2px #12151b; }
+.pp-rh-dot[data-result="win"] { background: #4caf7a; }
+.pp-rh-dot[data-result="other"] { background: var(--muted); }
+.pp-rh-dot[data-calibration="true"] { background: #12151b; border: 2px solid var(--muted); }
+.pp-rh-current { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 640px) {
+  .pp-rh-plot { height: 140px; }
+  .pp-rh-dot { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; box-shadow: none; }
+}
 .pp-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 14px 0 0; }
 .pp-facts div { padding: 10px 12px; border-radius: 6px; background: #12151b; } .pp-facts dt { color: var(--subtle); font: 600 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; }
 .pp-facts dd { margin: 4px 0 0; font: 700 17px var(--font-ui); } .pp-facts dd[data-win="true"] { color: #5cc690; } .pp-facts dd[data-win="false"] { color: #e0736f; }

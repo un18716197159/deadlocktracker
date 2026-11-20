@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import AppShell from "../components/app-shell";
-import { T } from "../../lib/i18n/provider";
+import { T, L } from "../../lib/i18n/provider";
 import { heroPortrait } from "../../lib/assets";
 import { getLocalizedHeroes } from "../../lib/localized";
 import { getHeroStatsForRating, getRanks, type HeroAsset, type HeroRatingFilter, type RankAsset } from "../../lib/deadlock-api";
 import "./tier-list.css";
 
 export const metadata = {
-  title: "Deadlock Tier List — best heroes right now | Deadlock Intelligence",
+  title: "Deadlock Tier List — best heroes right now | Deadlock Tracker",
   description: "Live Deadlock hero tier list from win rate and pick rate, filterable by rank group.",
 };
 
@@ -48,12 +48,12 @@ async function TierContent({ searchParams }: Props) {
     return { hero: heroes.get(row.hero_id) as HeroAsset, win, pick, matches: row.matches, score: win + 0.3 * (pick - meanPick) };
   }).sort((a, b) => b.score - a.score);
 
-  let cursor = 0;
+  // Each tier takes its share of the sorted heroes; the last tier takes whatever is left.
+  const sizes = TIERS.map((tier) => Math.round(rows.length * tier.share));
   const grouped = TIERS.map((tier, index) => {
-    const count = index === TIERS.length - 1 ? rows.length - cursor : Math.round(rows.length * tier.share);
-    const slice = rows.slice(cursor, cursor + count);
-    cursor += count;
-    return { ...tier, rows: slice };
+    const start = sizes.slice(0, index).reduce((sum, size) => sum + size, 0);
+    const end = index === TIERS.length - 1 ? rows.length : start + sizes[index];
+    return { ...tier, rows: rows.slice(start, end) };
   });
 
   return (
@@ -111,7 +111,7 @@ async function TierContent({ searchParams }: Props) {
 export default function Page(props: Props) {
   return (
     <AppShell active="Tier list">
-      <Suspense fallback={<main className="content-inner tl-page"><p className="api-message" role="status">Loading…</p></main>}>
+      <Suspense fallback={<main className="content-inner tl-page"><p className="api-message" role="status"><L>Loading…</L></p></main>}>
         <TierContent {...props} />
       </Suspense>
     </AppShell>

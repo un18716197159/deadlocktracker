@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import AppShell from "../components/app-shell";
 import { getLocalizedHeroes, getLocalizedShopItems } from "../../lib/localized";
 import Items from "./items";
+import { L } from "../../lib/i18n/provider";
 
-export const metadata = { title: "Items | Deadlock Intelligence" };
+export const metadata = { title: "Items | Deadlock Tracker" };
 type Props = { searchParams: Promise<{ heroId?: string }> };
 
 async function Catalog({ searchParams }: Props) {
@@ -14,5 +15,5 @@ async function Catalog({ searchParams }: Props) {
 }
 
 export default function Page(props: Props) {
-  return <AppShell active="Items"><Suspense fallback={<main className="content-inner items-page"><h1>Items<span>.</span></h1><p className="api-message" role="status">Loading item assets…</p></main>}><Catalog {...props} /></Suspense></AppShell>;
+  return <AppShell active="Items"><Suspense fallback={<main className="content-inner items-page"><h1><L>Items</L><span>.</span></h1><p className="api-message" role="status"><L>Loading items…</L></p></main>}><Catalog {...props} /></Suspense></AppShell>;
 }

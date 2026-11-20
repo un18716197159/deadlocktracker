@@ -4,7 +4,7 @@ import AppShell from "../components/app-shell";
 import { getHeroes, getMatchList, getRanks, type MatchListFilters } from "../../lib/deadlock-api";
 import MatchExplorer from "./match-explorer";
 
-export const metadata = { title: "Match Explorer | Deadlock Intelligence" };
+export const metadata = { title: "Match Explorer | Deadlock Tracker" };
 
 type Search = {
   match_id?: string | string[];

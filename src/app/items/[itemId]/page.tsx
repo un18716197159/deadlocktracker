@@ -5,8 +5,17 @@ import AppShell from "../../components/app-shell";
 import { getAllItemAssetsIn, getItemAsset } from "../../../lib/items-api";
 import { apiLanguage, getRequestLocale } from "../../../lib/i18n/server";
 import ItemDetail from "./item-detail";
+import { L } from "../../../lib/i18n/provider";
 
-export const metadata = { title: "Item Details | Deadlock Intelligence" };
+export async function generateMetadata({ params }: { params: Promise<{ itemId: string }> }) {
+  const { itemId } = await params;
+  const item = /^\d+$/.test(itemId) ? await getItemAsset(Number(itemId)).catch(() => undefined) : undefined;
+  if (!item) return { title: "Item | Deadlock Tracker" };
+  return {
+    title: `${item.name} — Deadlock item stats | Deadlock Tracker`,
+    description: `${item.name}: win rate, pick rate, cost and the heroes that buy it most in Deadlock.`,
+  };
+}
 
 async function Content({ params }: { params: Promise<{ itemId: string }> }) {
   await connection();
@@ -24,5 +33,5 @@ async function Content({ params }: { params: Promise<{ itemId: string }> }) {
 }
 
 export default function Page({ params }: { params: Promise<{ itemId: string }> }) {
-  return <AppShell active="Items"><Suspense fallback={<main className="content-inner item-detail-page"><p className="api-message" role="status">Loading item details…</p></main>}><Content params={params} /></Suspense></AppShell>;
+  return <AppShell active="Items"><Suspense fallback={<main className="content-inner item-detail-page"><p className="api-message" role="status"><L>Loading item details…</L></p></main>}><Content params={params} /></Suspense></AppShell>;
 }

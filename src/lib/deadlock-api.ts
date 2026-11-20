@@ -28,6 +28,13 @@ export type MatchHistoryEntry = {
   player_match_outcome?: number;
   game_mode?: number;
   match_mode?: number;
+  /** Team the player was on in this match (0 or 1). */
+  player_team?: number;
+  /** Ranked matches only: rank after the match, encoded as tier * 10 + subrank (96 = tier 9, division 6). */
+  ranked_display_badge?: number | null;
+  /** Ranked matches only: rank progress gained (+) or lost (−) in this match. */
+  ranked_delta?: number | null;
+  ranked_calibration_match?: number | null;
 };
 
 export type HeroAsset = { id?: number; name?: string; description?: { lore?: string | null; playstyle?: string | null; role?: string | null } | null; images?: { icon_image_small?: string | null; icon_image_small_webp?: string | null; icon_hero_card?: string | null; icon_hero_card_webp?: string | null; background_image?: string | null; background_image_webp?: string | null; hero_card_critical?: string | null; hero_card_critical_webp?: string | null } | null; in_development?: boolean; limited_testing?: boolean; [key: string]: unknown };
@@ -250,6 +257,8 @@ export type MatchPlayerDetails = {
   kills?: number; deaths?: number; assists?: number; net_worth?: number;
   last_hits?: number; denies?: number; level?: number; player_match_outcome?: number; player_damage?: number; player_damage_taken?: number; player_healing?: number; stats_time_stamp_s?: number;
   items: MatchItemEvent[];
+  /** Net worth snapshots during the match (every few minutes), oldest first. */
+  net_worth_timeline: Array<{ time_s: number; net_worth: number }>;
 };
 export type MatchDetails = {
   match_id?: number; start_time?: number; duration_s?: number; winning_team?: number;
@@ -306,6 +315,11 @@ export async function getMatchDetails(matchId: string): Promise<MatchDetails> {
       assists: optionalNumber(player.assists) ?? optionalNumber(finalStats?.assists), net_worth: optionalNumber(player.net_worth) ?? optionalNumber(finalStats?.net_worth), last_hits: optionalNumber(player.last_hits) ?? optionalNumber(finalStats?.last_hits),
       denies: optionalNumber(player.denies) ?? optionalNumber(finalStats?.denies), level: optionalNumber(player.level) ?? optionalNumber(player.player_level) ?? optionalNumber(finalStats?.level),
       player_match_outcome: optionalNumber(player.player_match_outcome), items,
+      net_worth_timeline: snapshots.flatMap((entry) => {
+        const time = optionalNumber(entry.time_stamp_s);
+        const netWorth = optionalNumber(entry.net_worth);
+        return time === undefined || netWorth === undefined ? [] : [{ time_s: time, net_worth: netWorth }];
+      }),
       player_damage: optionalNumber(latest?.player_damage) ?? optionalNumber(finalStats?.player_damage) ?? optionalNumber(player.player_damage),
       player_damage_taken: optionalNumber(latest?.player_damage_taken) ?? optionalNumber(finalStats?.player_damage_taken) ?? optionalNumber(player.player_damage_taken),
       player_healing: optionalNumber(latest?.player_healing) ?? optionalNumber(finalStats?.player_healing) ?? optionalNumber(player.player_healing),

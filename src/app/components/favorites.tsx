@@ -16,6 +16,7 @@ function useFavorites() {
         if (response.status === 401) return { status: "anon" } as State;
         if (!response.ok) return { status: "error" } as State;
         const data = await response.json();
+        if (data.signedIn === false) return { status: "anon" } as State;
         return { status: "ready", favorites: Array.isArray(data.favorites) ? data.favorites : [] } as State;
       })
       .catch(() => ({ status: "error" }) as State)

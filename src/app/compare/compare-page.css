@@ -8,3 +8,31 @@
 .cmp-bar { display: block; height: 5px; border-radius: 3px; background: #6fb5ff; overflow: hidden; }
 .cmp-bar i { display: block; height: 100%; background: #f0b254; }
 @media (max-width: 600px) { .cmp-row { grid-template-columns: 1fr 1fr; } .cmp-mid { grid-column: 1 / -1; order: -1; } }
+
+/* Shared matches: teammates record, head to head, latest shared games. */
+.cmp-shared { padding: 16px; }
+.cmp-shared-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.cmp-shared-card { display: grid; gap: 4px; padding: 12px; border-radius: 6px; background: #12151b; }
+.cmp-shared-card small { color: var(--subtle); font: 600 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; }
+.cmp-shared-card strong { font: 700 22px var(--font-ui); font-variant-numeric: tabular-nums; }
+.cmp-shared-card span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-h2h { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: #3a3f50; overflow: hidden; }
+.cmp-h2h i { display: block; height: 100%; background: #7c6cf0; }
+.cmp-shared-list { display: grid; gap: 4px; }
+.cmp-shared-row { display: grid; grid-template-columns: 70px 1fr 120px 1fr 80px; gap: 10px; align-items: center; padding: 8px 10px; border-left: 3px solid #3a3f50; border-radius: 6px; background: #12151b; color: var(--ink); text-decoration: none; }
+.cmp-shared-row:hover { background: #1a1d24; }
+.cmp-shared-row[data-result="win"] { border-left-color: #4caf7a; }
+.cmp-shared-row[data-result="loss"] { border-left-color: #d9534f; }
+.cmp-shared-row[data-result="left"], .cmp-shared-row[data-result="right"] { border-left-color: #7c6cf0; }
+.cmp-shared-kind { color: var(--subtle); font: 600 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; }
+.cmp-shared-result { text-align: center; font: 700 12px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-shared-row[data-result="win"] .cmp-shared-result { color: #5cc690; } .cmp-shared-row[data-result="loss"] .cmp-shared-result { color: #e0736f; }
+.cmp-shared-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cmp-shared-side i { flex: none; width: 28px; height: 28px; border-radius: 6px; background: #1a1d24 center / cover; color: var(--muted); font-size: 11px; display: grid; place-items: center; font-style: normal; }
+.cmp-shared-side span { display: grid; min-width: 0; } .cmp-shared-side b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; } .cmp-shared-side small { color: var(--muted); font-size: 11px; }
+.cmp-shared-when { color: var(--subtle); font-size: 11px; text-align: right; }
+@media (max-width: 720px) {
+  .cmp-shared-row { grid-template-columns: 1fr 1fr; }
+  .cmp-shared-kind, .cmp-shared-when { display: none; }
+  .cmp-shared-result { grid-column: 1 / -1; grid-row: 1; text-align: left; }
+}

@@ -20,9 +20,9 @@ export default function AppShell({ active, children }: { active: string; childre
     <div className="app-shell">
       <header className="topnav">
         <div className="topnav-inner">
-          <Link href="/" className="brand" aria-label="Deadlock Intelligence home">
+          <Link href="/" className="brand" aria-label="Deadlock Tracker home">
             <LogoMark />
-            <span className="brand-name">Deadlock<b>Intel</b></span>
+            <span className="brand-name">DEADLOCK<b>TRACKER</b></span>
           </Link>
           <nav className="topnav-links" aria-label="Main navigation">
             {navigation.map(({ name, key, href }) => (
@@ -41,10 +41,6 @@ export default function AppShell({ active, children }: { active: string; childre
       </header>
       <section className="content">
         {children}
-        <div className="site-legal">
-          <T k="footer.legal" />{" "}
-          <a href="https://deadlock.gs/items/" target="_blank" rel="noopener noreferrer">deadlock.gs</a>. · <Link href="/privacy"><T k="footer.privacy" /></Link>
-        </div>
       </section>
     </div>
   );

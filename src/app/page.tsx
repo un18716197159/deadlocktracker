@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import AppShell from "./components/app-shell";
-import GlobalAnalyticsPanel from "./components/global-analytics-panel";
 import HeroSearch from "./components/hero-search";
 import RecentPlayers from "./components/recent-players";
 import { FavoritePlayers } from "./components/favorites";
@@ -11,7 +10,7 @@ import { T } from "../lib/i18n/provider";
 import "./home.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "Deadlock Intelligence — Deadlock stats, heroes, items & builds" },
+  title: { absolute: "Deadlock Tracker — Deadlock stats, heroes, items & builds" },
   description: "Search any Deadlock player for rank, matches and hero stats, plus live meta for heroes, items and builds.",
 };
 
@@ -47,8 +46,6 @@ export default function Home() {
         </nav>
 
         <Suspense fallback={null}><MetaSnapshot /></Suspense>
-
-        <GlobalAnalyticsPanel />
 
       </div>
     </AppShell>

@@ -6,13 +6,13 @@ import type { HeroAsset } from "../../lib/deadlock-api";
 import type { BuildView } from "../../lib/items-api";
 import { heroPortrait } from "../../lib/assets";
 import ItemTile from "../components/item-tile";
-import { useI18n } from "../../lib/i18n/provider";
+import { useI18n, L } from "../../lib/i18n/provider";
 
 type Props = { heroes: HeroAsset[]; initialHeroId: number | null };
 type Payload = { builds: BuildView[] };
 
 export default function Builds({ heroes, initialHeroId }: Props) {
-  const { locale } = useI18n();
+  const { locale, p } = useI18n();
   const [heroId, setHeroId] = useState(initialHeroId === null ? "all" : String(initialHeroId));
   const [sort, setSort] = useState("weekly_favorites");
   const [query, setQuery] = useState("");
@@ -34,10 +34,9 @@ export default function Builds({ heroes, initialHeroId }: Props) {
   const count = (value?: number | null) => typeof value === "number" ? value.toLocaleString() : "Unavailable";
   const formatDate = (value?: number | null) => typeof value === "number" ? new Date(value * 1000).toLocaleDateString() : "Date unavailable";
   return <main className="content-inner builds-page">
-    <div className="page-heading"><div><p className="eyebrow">DEADLOCK API / PUBLISHED HERO BUILDS</p><h1>Community builds<span>.</span></h1><p className="muted">Published build guides and their real item categories from the API.</p></div><Link className="refresh-button" href="/items">Item catalog ↗</Link></div>
-    <form className="builds-filters" onSubmit={(event) => { event.preventDefault(); refresh(() => setSubmittedQuery(query.trim())); }}><label><span>SEARCH NAME</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Build title…" /></label><label><span>HERO</span><select value={heroId} onChange={(event) => refresh(() => setHeroId(event.target.value))}><option value="all">All heroes</option>{heroes.map((hero) => typeof hero.id === "number" ? <option key={hero.id} value={hero.id}>{hero.name || `Hero ${hero.id}`}</option> : null)}</select></label><label><span>SORT BY</span><select value={sort} onChange={(event) => refresh(() => setSort(event.target.value))}><option value="weekly_favorites">Weekly favorites</option><option value="favorites">Favorites</option><option value="updated_at">Recently updated</option></select></label><button type="submit" className="refresh-button">Search</button></form>
-    <p className="builds-source-note">Builds come from Deadlock API community build records. Their categories contain the author&apos;s real item recommendations; no generated builds are shown.</p>
-    {loading && <div className="builds-skeleton" role="status" aria-label="Loading community builds" aria-busy="true">{[0, 1, 2, 3].map((index) => <div key={index} />)}</div>}
+    <div className="page-heading"><div><h1><L>Community builds</L><span>.</span></h1><p className="muted"><L>Top community build guides for every hero.</L></p></div><Link className="refresh-button" href="/items"><L>Item catalog ↗</L></Link></div>
+    <form className="builds-filters" onSubmit={(event) => { event.preventDefault(); refresh(() => setSubmittedQuery(query.trim())); }}><label><span><L>SEARCH NAME</L></span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={p("Build title…")} /></label><label><span><L>HERO</L></span><select value={heroId} onChange={(event) => refresh(() => setHeroId(event.target.value))}><option value="all">{p("All heroes")}</option>{heroes.map((hero) => typeof hero.id === "number" ? <option key={hero.id} value={hero.id}>{hero.name || `Hero ${hero.id}`}</option> : null)}</select></label><label><span><L>SORT BY</L></span><select value={sort} onChange={(event) => refresh(() => setSort(event.target.value))}><option value="weekly_favorites">{p("Weekly favorites")}</option><option value="favorites">{p("Favorites")}</option><option value="updated_at">{p("Recently updated")}</option></select></label><button type="submit" className="refresh-button"><L>Search</L></button></form>
+    {loading && <div className="builds-skeleton" role="status" aria-label={p("Loading community builds")} aria-busy="true">{[0, 1, 2, 3].map((index) => <div key={index} />)}</div>}
     {error && <p className="api-message error-message" role="alert">Community builds unavailable. {error}</p>}
     {!loading && !error && rows.length > 0 && <div className="builds-grid">{rows.map(({ build, hero, categories }) => {
       const heroBuild = build.hero_build;
@@ -59,17 +58,16 @@ export default function Builds({ heroes, initialHeroId }: Props) {
                 <small>{category.name}</small>
                 <div className="build-icons">
                   {category.items.slice(0, 8).map((entry, index) => <ItemTile key={`${entry.item?.id ?? "x"}-${index}`} item={entry.item} />)}
-                  {category.items.length === 0 && <span className="build-icons-empty">No item entries</span>}
+                  {category.items.length === 0 && <span className="build-icons-empty"><L>No item entries</L></span>}
                 </div>
               </div>
             ))}
           </div>
-          <div className="community-build-meta"><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div>
-          <Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link>
+          <div className="community-build-meta"><span>{p("Version {n}", { n: heroBuild.version })}</span><span>{p("Updated {date}", { date: formatDate(heroBuild.last_updated_timestamp) })}</span></div>
+          <Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}><L>View build details ↗</L></Link>
         </article>
       );
     })}</div>}
-    {!loading && !error && rows.length === 0 && <p className="api-message">No published builds matched these filters.</p>}
-    <footer>DEADLOCK INTELLIGENCE · COMMUNITY BUILDS</footer>
+    {!loading && !error && rows.length === 0 && <p className="api-message"><L>No published builds matched these filters.</L></p>}
   </main>;
 }

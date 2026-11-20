@@ -24,9 +24,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: "Deadlock Intelligence",
+  title: "Deadlock Tracker",
   description: "Deadlock match analytics and meta intelligence.",
-  openGraph: { type: "website", siteName: "Deadlock Intelligence" },
+  openGraph: { type: "website", siteName: "Deadlock Tracker" },
   twitter: { card: "summary_large_image" },
 };
 

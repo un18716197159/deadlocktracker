@@ -4,16 +4,19 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { SteamProfile } from "../../lib/deadlock-api";
 import RankBadge from "../components/rank-badge";
-import { useI18n } from "../../lib/i18n/provider";
+import { useI18n, L } from "../../lib/i18n/provider";
 import "./compare-page.css";
 
 type HeroSummary = { heroId: number; name: string; image: string | null; matches: number; wins: number; losses: number; winRate: number; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null };
 type ComparedPlayer = { accountId: number; name: string; avatar: string | null; rankName: string | null; rankTier: number | null; subrank: number | null; rankImage: string | null; matches: number; wins: number; losses: number; winRate: number | null; avgKills: number | null; avgDeaths: number | null; avgAssists: number | null; heroes: HeroSummary[] };
-type ComparePayload = { players: ComparedPlayer[]; period: string; sample: string };
+type SharedHero = { id: number; name: string; image: string | null } | null;
+type SharedMatch = { matchId: number; startTime: number | null; together: boolean; leftWon: boolean | null; leftHero: SharedHero; rightHero: SharedHero; leftKda: string; rightKda: string };
+type SharedSummary = { together: { matches: number; wins: number; losses: number }; against: { matches: number; leftWins: number; rightWins: number }; recent: SharedMatch[] };
+type ComparePayload = { players: ComparedPlayer[]; shared?: SharedSummary; period: string; sample: string };
 type SearchPayload = { players: SteamProfile[]; error?: string };
 
 export default function Compare({ initialLeft, initialRight }: { initialLeft: SteamProfile | null; initialRight: SteamProfile | null }) {
-  const { t } = useI18n();
+  const { t, p } = useI18n();
   const [left, setLeft] = useState<SteamProfile | null>(initialLeft);
   const [right, setRight] = useState<SteamProfile | null>(initialRight);
   const [period, setPeriod] = useState("90d");
@@ -45,12 +48,12 @@ export default function Compare({ initialLeft, initialRight }: { initialLeft: St
       <button type="button" className="compare-swap" onClick={swap} disabled={!left && !right} aria-label="Swap selected players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h15l-3-3M20 16H5l3 3" /></svg></button>
       <PlayerPicker label={t("compare.playerB")} selected={right} onSelect={(profile) => { setData(null); setError(""); setRight(profile); setLoading(Boolean(left && profile.account_id !== left.account_id)); }} onRemove={() => clearPlayer("right")} />
     </div>
-    <div className="compare-controls"><label><span>{t("compare.window")}</span><select value={period} onChange={(event) => changePeriod(event.target.value)}><option value="30d">Last 30 days</option><option value="90d">Last 90 days</option><option value="all">All available history</option></select></label><p>Both players use the same window. Only API match rows scored as wins or losses are included; all game and match modes are included.</p></div>
-    {!canCompare && <section className="panel compare-placeholder"><h2>{t("compare.choose")}</h2><p>Search for both players above. Their profile links and statistics will appear here after the API returns their match history.</p></section>}
+    <div className="compare-controls"><label><span>{t("compare.window")}</span><select value={period} onChange={(event) => changePeriod(event.target.value)}><option value="30d">{p("Last 30 days")}</option><option value="90d">{p("Last 90 days")}</option><option value="all">{p("All available history")}</option></select></label></div>
+    {!canCompare && <section className="panel compare-placeholder"><h2>{t("compare.choose")}</h2><p><L>Search for two players above to see them side by side.</L></p></section>}
     {loading && <div className="compare-skeleton" role="status" aria-label="Loading comparison" aria-busy="true"><div /><div /><div /><div /></div>}
     {error && <p className="api-message error-message" role="alert">Comparison unavailable. {error}</p>}
     {!loading && !error && data && <>
-      <section className="panel compare-summary"><div className="compare-player-heading">{data.players.map((player) => <div className="compare-player-card" key={player.accountId}><span className="compare-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{!player.avatar && player.name.slice(0, 1)}</span><div><p className="eyebrow">ACCOUNT {player.accountId}</p><h2>{player.name}</h2><p className="compare-rank"><RankBadge tier={player.rankTier} subrank={player.subrank} name={player.rankName} image={player.rankImage} size="sm" />{player.rankName || "Rank unavailable"}{player.subrank !== null ? ` · Division ${player.subrank}` : ""}</p><Link href={`/players/${player.accountId}`}>Open player profile ↗</Link></div></div>)}</div>
+      <section className="panel compare-summary"><div className="compare-player-heading">{data.players.map((player) => <div className="compare-player-card" key={player.accountId}><span className="compare-avatar" aria-hidden="true" style={player.avatar ? { backgroundImage: `url("${player.avatar}")` } : undefined}>{!player.avatar && player.name.slice(0, 1)}</span><div><h2>{player.name}</h2><p className="compare-rank"><RankBadge tier={player.rankTier} subrank={player.subrank} name={player.rankName} image={player.rankImage} size="sm" />{player.rankName || p("Rank unavailable")}{player.subrank !== null ? ` · ${p("Division {n}", { n: player.subrank })}` : ""}</p><Link href={`/players/${player.accountId}`}><L>Open player profile ↗</L></Link></div></div>)}</div>
         <div className="cmp-metrics">{[
           { label: t("compare.rank"), values: data.players.map((player) => player.rankName ? `${player.rankName}${player.subrank !== null ? ` · ${player.subrank}` : ""}` : "—"), raw: data.players.map((player) => player.rankTier !== null ? player.rankTier * 10 + (player.subrank ?? 0) : null), better: "high" as const },
           { label: t("compare.scored"), values: data.players.map((player) => num(player.matches)), raw: data.players.map((player) => player.matches), better: null },
@@ -66,17 +69,18 @@ export default function Compare({ initialLeft, initialRight }: { initialLeft: St
           return <div className="cmp-row" key={label}><strong data-lead={lead === 0}>{values[0]}</strong><div className="cmp-mid"><small>{label}</small><span className="cmp-bar" aria-hidden="true"><i style={{ width: `${leftShare}%` }} /></span></div><strong data-lead={lead === 1}>{values[1]}</strong></div>;
         })}</div>
       </section>
-      {data.players.every((player) => player.matches === 0) && <p className="api-message">No scored match history was returned for either player in this time window.</p>}
-      <section className="panel compare-heroes"><div className="panel-heading"><div><h2>{t("compare.heroes")}</h2></div><span className="live-tag">SAME MATCH WINDOW</span></div>
-        <div className="compare-hero-columns">{data.players.map((player) => <div className="compare-hero-column" key={player.accountId}><h3>{player.name}</h3>{player.heroes.length ? player.heroes.slice(0, 8).map((hero) => <Link className="compare-hero-row" href={`/heroes/${hero.heroId}`} key={hero.heroId}><span className="compare-hero-art" aria-hidden="true" style={hero.image ? { backgroundImage: `url("${hero.image}")` } : undefined}>{!hero.image && hero.name.slice(0, 1)}</span><span className="compare-hero-info"><b>{hero.name}</b><small>{num(hero.matches)} matches · {num(hero.wins)} W / {num(hero.losses)} L · {pct(hero.winRate)}</small><small>Avg K / D / A: {kda(hero.avgKills, hero.avgDeaths, hero.avgAssists)}</small></span><span aria-hidden="true">↗</span></Link>) : <p className="profile-note">No scored hero rows in this time window.</p>}</div>)}</div>
+      {data.players.every((player) => player.matches === 0) && <p className="api-message"><L>No matches for these players in this period.</L></p>}
+      {data.shared && <SharedMatches shared={data.shared} players={data.players} />}
+      <section className="panel compare-heroes"><div className="panel-heading"><div><h2>{t("compare.heroes")}</h2></div></div>
+        <div className="compare-hero-columns">{data.players.map((player) => <div className="compare-hero-column" key={player.accountId}><h3>{player.name}</h3>{player.heroes.length ? player.heroes.slice(0, 8).map((hero) => <Link className="compare-hero-row" href={`/heroes/${hero.heroId}`} key={hero.heroId}><span className="compare-hero-art" aria-hidden="true" style={hero.image ? { backgroundImage: `url("${hero.image}")` } : undefined}>{!hero.image && hero.name.slice(0, 1)}</span><span className="compare-hero-info"><b>{hero.name}</b><small>{p("{n} matches", { n: num(hero.matches) })} · {num(hero.wins)} W / {num(hero.losses)} L · {pct(hero.winRate)}</small><small>{p("Avg K / D / A")}: {kda(hero.avgKills, hero.avgDeaths, hero.avgAssists)}</small></span><span aria-hidden="true">↗</span></Link>) : <p className="profile-note"><L>No matches in this period.</L></p>}</div>)}</div>
       </section>
-      <p className="compare-source-note">Match counts and outcomes are counted from returned history entries. Win rate = wins ÷ scored matches. K/D/A averages use available values per metric. Current rank is the latest ranked badge returned by the API and is not affected by the selected time window.</p>
     </>}
     
   </main>;
 }
 
 function PlayerPicker({ label, selected, onSelect, onRemove }: { label: string; selected: SteamProfile | null; onSelect: (profile: SteamProfile) => void; onRemove: () => void }) {
+  const { p } = useI18n();
   const inputId = `compare-${label.replace(/\s+/g, "-").toLowerCase()}`;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SteamProfile[]>([]);
@@ -101,14 +105,60 @@ function PlayerPicker({ label, selected, onSelect, onRemove }: { label: string; 
   const choose = (profile: SteamProfile) => { onSelect(profile); setQuery(""); setResults([]); setError(""); };
   const avatar = selected?.avatarfull || selected?.avatar;
   return <section className="panel compare-picker"><label className="eyebrow" htmlFor={inputId}>{label}</label>
-    {selected && <div className="compare-selected"><span className="compare-avatar" aria-hidden="true" style={avatar ? { backgroundImage: `url("${avatar}")` } : undefined}>{!avatar && (selected.personaname?.slice(0, 1) || "?")}</span><span><strong>{selected.personaname || `Account ${selected.account_id}`}</strong><small>Account ID {selected.account_id}</small></span><Link href={`/players/${selected.account_id}`}>Profile ↗</Link><button type="button" onClick={onRemove} aria-label={`Remove ${label}`}>×</button></div>}
-    <input id={inputId} value={query} onChange={(event) => updateQuery(event.target.value)} placeholder={selected ? "Search to replace player…" : "Search player name…"} autoComplete="off" />
-    {query.trim().length === 1 && <p className="compare-picker-note">Enter at least two characters.</p>}
-    {loading && <p className="compare-picker-note" role="status">Searching players…</p>}
+    {selected && <div className="compare-selected"><span className="compare-avatar" aria-hidden="true" style={avatar ? { backgroundImage: `url("${avatar}")` } : undefined}>{!avatar && (selected.personaname?.slice(0, 1) || "?")}</span><span><strong>{selected.personaname || `Account ${selected.account_id}`}</strong><small>{p("Account ID")} {selected.account_id}</small></span><Link href={`/players/${selected.account_id}`}><L>Profile ↗</L></Link><button type="button" onClick={onRemove} aria-label={`Remove ${label}`}>×</button></div>}
+    <input id={inputId} value={query} onChange={(event) => updateQuery(event.target.value)} placeholder={selected ? p("Search to replace player…") : p("Search player name…")} autoComplete="off" />
+    {query.trim().length === 1 && <p className="compare-picker-note"><L>Enter at least two characters.</L></p>}
+    {loading && <p className="compare-picker-note" role="status"><L>Searching players…</L></p>}
     {error && <p className="compare-picker-note error-message" role="alert">{error}</p>}
-    {query.trim().length >= 2 && !loading && !error && results.length === 0 && <p className="compare-picker-note">No matching players were returned.</p>}
-    {results.length > 0 && <div className="compare-search-results" role="listbox" aria-label={`${label} search results`}>{results.map((profile, index) => { const image = profile.avatarfull || profile.avatar; return <button className="compare-search-result" type="button" key={`${profile.account_id ?? "unknown"}-${index}`} onClick={() => choose(profile)}><span className="compare-avatar" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined}>{!image && (profile.personaname?.slice(0, 1) || "?")}</span><span><strong>{profile.personaname || "Name unavailable"}</strong><small>Account ID {profile.account_id ?? "Unavailable"}</small></span></button>; })}</div>}
+    {query.trim().length >= 2 && !loading && !error && results.length === 0 && <p className="compare-picker-note"><L>No players found.</L></p>}
+    {results.length > 0 && <div className="compare-search-results" role="listbox" aria-label={`${label} search results`}>{results.map((profile, index) => { const image = profile.avatarfull || profile.avatar; return <button className="compare-search-result" type="button" key={`${profile.account_id ?? "unknown"}-${index}`} onClick={() => choose(profile)}><span className="compare-avatar" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined}>{!image && (profile.personaname?.slice(0, 1) || "?")}</span><span><strong>{profile.personaname || p("Name unavailable")}</strong><small>{p("Account ID")} {profile.account_id ?? "—"}</small></span></button>; })}</div>}
   </section>;
+}
+
+/** Matches both players were in: record as teammates, head to head, and the latest shared games. */
+function SharedMatches({ shared, players }: { shared: SharedSummary; players: ComparedPlayer[] }) {
+  const { t } = useI18n();
+  const [a, b] = players;
+  const { together, against, recent } = shared;
+  const rate = (wins: number, losses: number) => (wins + losses ? pct((wins / (wins + losses)) * 100) : "—");
+  return <section className="panel cmp-shared">
+    <div className="panel-heading"><div><h2>{t("compare.shared")}</h2></div><span className="live-tag">{num(together.matches + against.matches)} {t("compare.sharedCount")}</span></div>
+    {together.matches + against.matches === 0 ? <p className="profile-note">{t("compare.noShared")}</p> : <>
+      <div className="cmp-shared-cards">
+        <div className="cmp-shared-card">
+          <small>{t("compare.together")}</small>
+          <strong>{num(together.matches)}</strong>
+          <span>{together.wins} W / {together.losses} L · {rate(together.wins, together.losses)}</span>
+        </div>
+        <div className="cmp-shared-card">
+          <small>{t("compare.against")}</small>
+          <strong>{against.leftWins} : {against.rightWins}</strong>
+          <span>{a.name} — {b.name}</span>
+          {against.matches > 0 && <span className="cmp-h2h" aria-hidden="true"><i style={{ width: `${(against.leftWins / Math.max(1, against.leftWins + against.rightWins)) * 100}%` }} /></span>}
+        </div>
+      </div>
+      <div className="cmp-shared-list">
+        {recent.map((match) => {
+          const result = match.leftWon === null ? "other" : match.together ? (match.leftWon ? "win" : "loss") : match.leftWon ? "left" : "right";
+          const label = match.leftWon === null ? "—" : match.together ? (match.leftWon ? t("result.victory") : t("result.defeat")) : `${match.leftWon ? a.name : b.name} ${t("compare.won")}`;
+          return <Link className="cmp-shared-row" href={`/matches/${match.matchId}`} key={match.matchId} data-result={result}>
+            <span className="cmp-shared-kind">{match.together ? t("compare.togetherShort") : t("compare.againstShort")}</span>
+            <SharedSide hero={match.leftHero} kda={match.leftKda} />
+            <span className="cmp-shared-result">{label}</span>
+            <SharedSide hero={match.rightHero} kda={match.rightKda} />
+            <span className="cmp-shared-when">{match.startTime ? new Date(match.startTime * 1000).toLocaleDateString() : ""}</span>
+          </Link>;
+        })}
+      </div>
+    </>}
+  </section>;
+}
+
+function SharedSide({ hero, kda }: { hero: SharedHero; kda: string }) {
+  return <span className="cmp-shared-side">
+    <i aria-hidden="true" style={hero?.image ? { backgroundImage: `url("${hero.image}")` } : undefined}>{hero?.image ? null : "?"}</i>
+    <span><b>{hero?.name ?? "—"}</b><small>{kda}</small></span>
+  </span>;
 }
 
 function num(value: number | null) { return value !== null && Number.isFinite(value) ? Math.round(value).toLocaleString() : "—"; }

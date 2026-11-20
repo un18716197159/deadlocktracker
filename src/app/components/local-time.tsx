@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useI18n } from "../../lib/i18n/provider";
+
+// "Now" is read once in the browser (null on the server, so server and browser HTML match).
+let browserNow = 0;
+const readNow = () => (browserNow ||= Date.now());
+const noSubscribe = () => () => {};
 
 /** Time shown in the visitor's own time zone and language: "5 min ago" for recent, full date otherwise. */
 export default function LocalTime({ seconds, mode = "relative" }: { seconds?: number | null; mode?: "relative" | "full" }) {
   const { locale } = useI18n();
-  const [now, setNow] = useState<number | null>(null);
-  useEffect(() => { setNow(Date.now()); }, []);
+  const now = useSyncExternalStore(noSubscribe, readNow, () => null);
   if (typeof seconds !== "number") return <span>—</span>;
   const date = new Date(seconds * 1000);
   const full = date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
