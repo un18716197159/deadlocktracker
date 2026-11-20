@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ItemAnalytics, ItemAnalyticsFilters, ItemAsset, ItemHeroStat } from "../../../lib/items-api";
-import { itemImage } from "../../../lib/assets";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
 type Props = { item: ItemAsset };
@@ -37,7 +36,6 @@ export default function ItemDetail({ item }: Props) {
 
   const updateFilter = (key: keyof ItemAnalyticsFilters, value: string) => { setLoading(true); setHeroLoading(true); setError(""); setHeroError(""); setFilters((current) => ({ ...current, [key]: value, ...(key === "gameMode" && value === "street_brawl" ? { rating: "all" } : {}) })); };
   const stat = analytics?.stats[String(item.id)];
-  const image = itemImage(item);
   const properties = Object.entries(item.properties ?? {}).flatMap(([key, property]) => {
     if (!property) return [];
     const value = property.value;
@@ -52,7 +50,7 @@ export default function ItemDetail({ item }: Props) {
 
   return <main className="content-inner item-detail-page">
     <Link className="back-link" href="/items">← Item catalog</Link>
-    <section className="panel item-detail-hero"><span className="item-detail-art" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined}>{!image && <i />}</span><div className="item-detail-heading"><p className="eyebrow">{item.item_slot_type || item.type} {typeof item.item_tier === "number" ? `/ TIER ${item.item_tier}` : ""} / ID {item.id}</p><h1>{item.name}<span>.</span></h1><p>{description || "The API did not provide a description for this asset."}</p><div className="item-detail-badges"><span>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</span>{item.is_active_item && <span>Active item</span>}</div></div></section>
+    <section className="panel item-detail-hero"><ItemDetailArtwork key={item.id} item={item} /><div className="item-detail-heading"><p className="eyebrow">{item.item_slot_type || item.type} {typeof item.item_tier === "number" ? `/ TIER ${item.item_tier}` : ""} / ID {item.id}</p><h1>{item.name}<span>.</span></h1><p>{description || "The API did not provide a description for this asset."}</p><div className="item-detail-badges"><span>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</span>{item.is_active_item && <span>Active item</span>}</div></div></section>
     <div className="items-filters item-detail-filters"><label><span>PERIOD</span><select value={filters.period} onChange={(event) => updateFilter("period", event.target.value)}><option value="7d">7 days</option><option value="30d">30 days</option><option value="90d">90 days</option><option value="all">All available</option></select></label><label><span>GAME MODE</span><select value={filters.gameMode} onChange={(event) => updateFilter("gameMode", event.target.value)}><option value="normal">Normal</option><option value="street_brawl">Street Brawl</option></select></label><label><span>MATCH TYPE</span><select value={filters.matchMode} onChange={(event) => updateFilter("matchMode", event.target.value)}><option value="ranked,unranked">Ranked + unranked</option><option value="ranked">Ranked</option><option value="unranked">Unranked</option></select></label><label><span>RATING</span><select value={filters.rating} onChange={(event) => updateFilter("rating", event.target.value)} disabled={filters.gameMode === "street_brawl"}><option value="all">{filters.gameMode === "street_brawl" ? "Unavailable in this mode" : "All ratings"}</option><option value="0-29">Badge 0–29</option><option value="30-59">Badge 30–59</option><option value="60-89">Badge 60–89</option><option value="90-116">Badge 90–116</option></select></label></div>
     {loading && <div className="item-detail-metrics" role="status" aria-busy="true">{[0, 1, 2, 3].map((index) => <div className="profile-metric" key={index}><small>LOADING</small><strong>—</strong></div>)}</div>}
     {error && <p className="api-message error-message" role="alert">Item analytics unavailable. {error}</p>}
@@ -65,6 +63,28 @@ export default function ItemDetail({ item }: Props) {
     <section className="panel item-related-links"><div><p className="eyebrow">RELATED EXPLORATION</p><h2>Continue exploring</h2></div><Link href="/builds">Browse community builds ↗</Link><Link href="/matches">Open Match Explorer ↗</Link><Link href="/heroes">Explore heroes ↗</Link></section>
     <footer>DEADLOCK INTELLIGENCE · ITEM DATA</footer>
   </main>;
+}
+
+function ItemDetailArtwork({ item }: { item: ItemAsset }) {
+  const [src, setSrc] = useState(item.image_webp || item.image || "");
+  const [usedFallback, setUsedFallback] = useState(false);
+  return <span className="item-detail-art" aria-hidden="true">
+    {src ? <img
+      src={src}
+      alt=""
+      width={108}
+      height={108}
+      decoding="async"
+      onError={() => {
+        if (!usedFallback && item.image && item.image !== src) {
+          setUsedFallback(true);
+          setSrc(item.image);
+        } else {
+          setSrc("");
+        }
+      }}
+    /> : <i />}
+  </span>;
 }
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) { return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>; }

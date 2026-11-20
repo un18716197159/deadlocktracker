@@ -1,7 +1,6 @@
 import "server-only";
 import { cachedUpstream } from "./db/cache";
 import { cacheNowSeconds, deadlockHeaders } from "./upstream";
-import { cacheLife } from "next/cache";
 import { getHeroes, type HeroAsset } from "./deadlock-api";
 
 const API = "https://api.deadlock-api.com/v1";
@@ -83,11 +82,25 @@ function filtersQuery(filters: ItemAnalyticsFilters, bucket: string, heroId?: nu
 }
 
 export async function getAllItemAssets(): Promise<ItemAsset[]> {
-  "use cache";
-  cacheLife("days");
-  const result = await requestJson<unknown>("/assets/items?language=english");
+  // Resolve the newest game build first. The explicit version in the item URL
+  // prevents a stale catalog from being mixed with newer analytics item IDs.
+  const versions = await requestJson<unknown>("/assets/client-versions");
+  if (!Array.isArray(versions) || versions.length === 0) {
+    throw new ItemApiError("Deadlock API did not return available game versions.", 502);
+  }
+
+  const latestVersion = versions.reduce<number>((latest, version) =>
+    typeof version === "number" && Number.isSafeInteger(version) && version > latest ? version : latest, 0);
+  if (latestVersion <= 0) {
+    throw new ItemApiError("Deadlock API returned an invalid latest game version.", 502);
+  }
+
+  // requestJson uses the existing 10-minute upstream cache. Because the
+  // version is part of the cache key, a new game patch gets a fresh catalog.
+  const result = await requestJson<unknown>(`/assets/items?language=english&client_version=${latestVersion}`);
   if (!Array.isArray(result)) throw new ItemApiError("Deadlock API returned an invalid item catalog.", 502);
-  return (result as ItemAsset[]).filter((item) => Number.isSafeInteger(item.id) && typeof item.name === "string");
+  return (result as ItemAsset[]).filter((item) =>
+    Number.isSafeInteger(item.id) && typeof item.name === "string" && typeof item.class_name === "string");
 }
 
 export async function getItemAssets(): Promise<ItemAsset[]> {

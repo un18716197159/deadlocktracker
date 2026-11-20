@@ -1,25 +1,79 @@
-/* Top-navigation shell. Imported last so it overrides the old sidebar layout. */
-.app-shell { display: block; padding-bottom: 0; }
-.app-shell .sidebar, .app-shell .mobile-nav { display: none; }
+/* Gothic Intelligence application shell. Page content and routes remain unchanged. */
+:root {
+  --ink: #eeeaf5;
+  --muted: #9690a5;
+  --line: #292333;
+  --panel: #14111b;
+  --accent: #9b70dc;
+  --accent-bright: #c3a0ff;
+  --bg: #09080e;
+  --gothic-sidebar: #0d0b13;
+}
 
-.topnav { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--line); background: rgb(12 10 15 / 88%); backdrop-filter: blur(14px); }
-.topnav-inner { display: flex; align-items: center; gap: var(--space-4); width: min(100%, 1500px); height: 60px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 58px); }
-.topnav .brand { flex: none; min-height: 0; margin: 0; }
-.topnav .brand-mark { display: inline-flex; align-items: center; min-height: 30px; line-height: 1; overflow: visible; }
-.topnav .brand-mark i { display: inline-block; flex: 0 0 3px; width: 3px; height: 22px; margin: 0 4px; transform: skew(-18deg); }
-.topnav-links { display: flex; align-items: stretch; gap: 2px; height: 100%; margin-left: var(--space-4); overflow-x: auto; scrollbar-width: none; }
-.topnav-links::-webkit-scrollbar { display: none; }
-.topnav-link { position: relative; display: inline-flex; align-items: center; padding: 0 14px; color: var(--muted); font: 600 13px var(--font-ui); text-decoration: none; white-space: nowrap; transition: color .15s; }
-.topnav-link:hover { color: var(--ink); }
-.topnav-link[aria-current="page"] { color: var(--ink); }
-.topnav-link[aria-current="page"]::after { position: absolute; right: 14px; bottom: 0; left: 14px; height: 2px; background: var(--accent-bright); content: ""; }
-.refresh-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 15px; line-height: 1.2; white-space: nowrap; }
-.topnav-spacer { flex: 1; }
+.gothic-shell { display: flex; min-height: 100vh; background: radial-gradient(ellipse at 72% -12%, #241637 0, transparent 34%), var(--bg); }
+.gothic-shell > .content { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.gothic-shell .content-page { flex: 1; min-width: 0; }
+.gothic-shell .sidebar.desktop-sidebar { z-index: 40; display: flex; flex: 0 0 238px; flex-direction: column; width: 238px; min-height: 100vh; height: 100vh; position: sticky; top: 0; padding: 24px 14px 18px; border-right: 1px solid #282033; background: linear-gradient(180deg, #100d18 0%, #0b0a10 100%); }
+.gothic-shell .brand { display: flex; align-items: center; gap: 12px; min-height: 56px; margin: 0 4px 42px; padding: 0 8px; color: var(--ink); text-decoration: none; }
+.brand-sigil { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border: 1px solid #5c437c; background: linear-gradient(145deg,#281b3b,#100d17); box-shadow: 0 0 22px #7544ad24; }
+.brand-sigil svg { width: 27px; height: 27px; fill: none; stroke: #c3a0ff; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.brand-copy { display: grid; gap: 4px; }
+.brand-copy strong { color: #f1edf8; font: 700 11px/1 Arial,sans-serif; letter-spacing: 2.1px; }
+.brand-copy small { color: #8e7ca8; font: 700 8px/1 Arial,sans-serif; letter-spacing: 2.3px; }
+.sidebar-nav { display: grid; gap: 5px; }
+.sidebar-section-label { margin: 0 10px 11px; color: #71677f; font: 700 9px/1 Arial,sans-serif; letter-spacing: 1.9px; }
+.sidebar-link { position: relative; display: flex; align-items: center; gap: 13px; min-height: 43px; padding: 0 12px; border: 1px solid transparent; color: #9b94a9; font-size: 12px; font-weight: 600; text-decoration: none; transition: color .16s ease, background .16s ease, border-color .16s ease; }
+.sidebar-link svg { flex: 0 0 19px; color: #827493; }
+.sidebar-link:hover { color: #eee7fa; background: #191321; }
+.sidebar-link[aria-current="page"] { border-color: #3d2c53; background: linear-gradient(90deg,#291b3b,#1a1424 85%); color: #f2eaff; box-shadow: inset 2px 0 #a77be7, 0 5px 18px #0002; }
+.sidebar-link[aria-current="page"] svg { color: #c4a0fa; }
+.sidebar-link-indicator { width: 5px; height: 5px; margin-left: auto; border-radius: 50%; background: #bd91ff; box-shadow: 0 0 10px #a875f4; }
+.sidebar-bottom { margin-top: auto; padding: 14px 7px 0; border-top: 1px solid #292233; }
+.sidebar-data-status { display: flex; align-items: center; gap: 10px; padding: 9px 7px; border: 1px solid #292333; background: #13101a; }
+.sidebar-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #a987e8; box-shadow: 0 0 10px #a987e866; }
+.sidebar-data-status b,.sidebar-data-status small { display: block; }
+.sidebar-data-status b { color: #d9cbed; font-size: 8px; letter-spacing: 1.3px; }
+.sidebar-data-status small { margin-top: 4px; color: #777084; font-size: 9px; }
+.sidebar-version { margin: 13px 0 0; color: #665d73; font-size: 7px; letter-spacing: 1.3px; text-align: center; }
+.sidebar-version span { color: #9b70dc; }
+.gothic-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 62px; padding: 0 clamp(18px,3vw,42px); border-bottom: 1px solid #292333; background: rgb(11 9 16 / 88%); backdrop-filter: blur(16px); }
+.topbar-context { display: flex; align-items: center; gap: 10px; min-width: 0; color: #716a7e; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; }
+.topbar-context b { color: #51445f; }
+.topbar-context strong { overflow: hidden; color: #e5dcef; font-size: 10px; letter-spacing: 1.2px; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-account { margin-left: auto; }
+.mobile-menu-button,.sidebar-backdrop { display: none; }
+.gothic-shell .content-inner { max-width: 1480px; padding-right: clamp(18px,3.2vw,48px); padding-left: clamp(18px,3.2vw,48px); }
+.gothic-shell .panel { border-color: #2b2337; background: linear-gradient(145deg,rgba(24,19,32,.92),rgba(15,13,21,.94)); }
+.gothic-shell .eyebrow { color: #9b82bb; }
+.gothic-shell .page-heading h1,.gothic-shell .item-detail-heading h1 { color: #f0eaf8; }
+.gothic-shell .refresh-button { border-color: #49375f; color: #d4c4e9; background: #171120; }
+.gothic-shell .refresh-button:hover { border-color: #9168c4; background: #21172e; }
 
-@media (max-width: 860px) {
-  .topnav-inner { flex-wrap: wrap; row-gap: 0; height: auto; padding-top: 10px; padding-bottom: 0; }
-  .topnav .brand { order: 1; }
-  .topnav-spacer { order: 2; }
-  .topnav .account-menu { order: 3; min-width: 0; }
-  .topnav-links { order: 4; flex: 0 0 100%; height: 44px; margin-left: 0; }
+@media (max-width: 900px) {
+  .gothic-shell .sidebar.desktop-sidebar { flex-basis: 210px; width: 210px; }
+}
+@media (max-width: 700px) {
+  .gothic-shell .sidebar.desktop-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    display: flex;
+    width: min(82vw, 280px);
+    height: 100dvh;
+    min-height: 0;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    box-shadow: 18px 0 55px #0008;
+  }
+  .gothic-shell .sidebar.desktop-sidebar.is-open { transform: translateX(0); }
+  .gothic-shell .mobile-menu-button { display: grid; flex: 0 0 34px; width: 34px; height: 34px; align-content: center; justify-items: center; gap: 5px; border: 1px solid #3b2d4e; background: #171120; }
+  .mobile-menu-button span { display: block; width: 15px; height: 1px; background: #c5a4ef; }
+  .sidebar-backdrop { position: fixed; inset: 0; z-index: 35; display: block; border: 0; background: #05030a9c; }
+  .gothic-topbar { height: 58px; padding: 0 14px; }
+  .topbar-context { gap: 7px; font-size: 7px; }
+  .topbar-context strong { font-size: 9px; }
+  .gothic-shell .content-inner { padding-top: 25px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-link,.gothic-shell .sidebar.desktop-sidebar { transition: none; }
 }
