@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import AppShell from "../components/app-shell";
-import { getHeroes, getMatchList, type MatchListFilters } from "../../lib/deadlock-api";
+import { getHeroes, getMatchList, getRanks, type MatchListFilters } from "../../lib/deadlock-api";
 import MatchExplorer from "./match-explorer";
 
 export const metadata = { title: "Match Explorer | Deadlock Intelligence" };
@@ -58,7 +58,8 @@ export default async function MatchesPage({ searchParams }: Props) {
     cursor,
     limit: PAGE_SIZE,
   };
-  const [matchResult, heroResult] = await Promise.allSettled([getMatchList(filters), getHeroes()]);
+  const [matchResult, heroResult, rankResult] = await Promise.allSettled([getMatchList(filters), getHeroes(), getRanks()]);
+  const ranks = rankResult.status === "fulfilled" ? rankResult.value : [];
   const rows = matchResult.status === "fulfilled" ? matchResult.value : [];
   const heroes = heroResult.status === "fulfilled" ? heroResult.value.filter((hero) => Number.isInteger(hero.id) && typeof hero.name === "string") : [];
   const hasMore = rows.length === PAGE_SIZE;
@@ -76,5 +77,5 @@ export default async function MatchesPage({ searchParams }: Props) {
   const nextHref = nextCursor === undefined ? undefined : `/matches?${nextSearch.toString()}`;
   const matchError = matchResult.status === "rejected" ? matchResult.reason instanceof Error ? matchResult.reason.message : "Deadlock API could not load matches." : undefined;
 
-  return <AppShell active="Matches"><MatchExplorer rows={rows} heroes={heroes} filters={filtersForUi} matchError={matchError} invalidMatchId={Boolean(requestedId && !validMatchId(requestedId))} nextHref={nextHref} /></AppShell>;
+  return <AppShell active="Matches"><MatchExplorer rows={rows} heroes={heroes} ranks={ranks} filters={filtersForUi} matchError={matchError} invalidMatchId={Boolean(requestedId && !validMatchId(requestedId))} nextHref={nextHref} /></AppShell>;
 }

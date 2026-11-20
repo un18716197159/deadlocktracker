@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ItemAnalytics, ItemAnalyticsFilters, ItemAsset, ItemHeroStat } from "../../../lib/items-api";
+import "../../heroes/[heroId]/hero-detail.css";
+import "./item-page.css";
+import ItemTile from "../../components/item-tile";
+import { RichText, stripRichText } from "../../../lib/rich-text";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
 type Props = { item: ItemAsset };
@@ -43,14 +47,26 @@ export default function ItemDetail({ item }: Props) {
     const label = property.label || key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");
     return [{ key, label, value: `${property.prefix && !property.prefix.includes("{") ? property.prefix : ""}${value}${property.postfix ?? ""}` }];
   }).slice(0, 16);
-  const description = plainText(item.description?.desc || "");
+  const extra = item.description;
+  const hasText = Boolean(stripRichText(extra?.desc) || stripRichText(extra?.active) || stripRichText(extra?.passive));
   const num = (value?: number | null) => typeof value === "number" && Number.isFinite(value) ? value.toLocaleString() : "—";
   const pct = (value?: number | null) => typeof value === "number" && Number.isFinite(value) ? `${value.toFixed(1)}%` : "—";
   const clock = (seconds?: number | null) => typeof seconds === "number" && Number.isFinite(seconds) ? `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}` : "—";
 
   return <main className="content-inner item-detail-page">
     <Link className="back-link" href="/items">← Item catalog</Link>
-    <section className="panel item-detail-hero"><ItemDetailArtwork key={item.id} item={item} /><div className="item-detail-heading"><p className="eyebrow">{item.item_slot_type || item.type} {typeof item.item_tier === "number" ? `/ TIER ${item.item_tier}` : ""} / ID {item.id}</p><h1>{item.name}<span>.</span></h1><p>{description || "The API did not provide a description for this asset."}</p><div className="item-detail-badges"><span>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</span>{item.is_active_item && <span>Active item</span>}</div></div></section>
+    <section className="id-header" data-slot={item.item_slot_type}>
+      <ItemTile item={item} size="xl" />
+      <div className="id-title">
+        <div className="id-chips">{item.item_slot_type && <span className="id-chip slot">{item.item_slot_type}</span>}{typeof item.item_tier === "number" && <span className="id-chip">Tier {item.item_tier}</span>}{item.is_active_item && <span className="id-chip">Active</span>}</div>
+        <h1>{item.name}</h1>
+        {typeof item.cost === "number" && <p className="id-cost">{item.cost.toLocaleString()} souls</p>}
+      </div>
+    </section>
+    <section className="id-panel">
+      <h2>Description</h2>
+      {hasText ? <div className="id-text"><RichText text={extra?.desc} />{stripRichText(extra?.active) && <div className="hp-effect"><b>Active</b><RichText text={extra?.active} /></div>}{stripRichText(extra?.passive) && <div className="hp-effect"><b>Passive</b><RichText text={extra?.passive} /></div>}</div> : <p className="muted">The API did not provide a description for this item.</p>}
+    </section>
     <div className="items-filters item-detail-filters"><label><span>PERIOD</span><select value={filters.period} onChange={(event) => updateFilter("period", event.target.value)}><option value="7d">7 days</option><option value="30d">30 days</option><option value="90d">90 days</option><option value="all">All available</option></select></label><label><span>GAME MODE</span><select value={filters.gameMode} onChange={(event) => updateFilter("gameMode", event.target.value)}><option value="normal">Normal</option><option value="street_brawl">Street Brawl</option></select></label><label><span>MATCH TYPE</span><select value={filters.matchMode} onChange={(event) => updateFilter("matchMode", event.target.value)}><option value="ranked,unranked">Ranked + unranked</option><option value="ranked">Ranked</option><option value="unranked">Unranked</option></select></label><label><span>RATING</span><select value={filters.rating} onChange={(event) => updateFilter("rating", event.target.value)} disabled={filters.gameMode === "street_brawl"}><option value="all">{filters.gameMode === "street_brawl" ? "Unavailable in this mode" : "All ratings"}</option><option value="0-29">Badge 0–29</option><option value="30-59">Badge 30–59</option><option value="60-89">Badge 60–89</option><option value="90-116">Badge 90–116</option></select></label></div>
     {loading && <div className="item-detail-metrics" role="status" aria-busy="true">{[0, 1, 2, 3].map((index) => <div className="profile-metric" key={index}><small>LOADING</small><strong>—</strong></div>)}</div>}
     {error && <p className="api-message error-message" role="alert">Item analytics unavailable. {error}</p>}
@@ -65,27 +81,4 @@ export default function ItemDetail({ item }: Props) {
   </main>;
 }
 
-function ItemDetailArtwork({ item }: { item: ItemAsset }) {
-  const [src, setSrc] = useState(item.image_webp || item.image || "");
-  const [usedFallback, setUsedFallback] = useState(false);
-  return <span className="item-detail-art" aria-hidden="true">
-    {src ? <img
-      src={src}
-      alt=""
-      width={108}
-      height={108}
-      decoding="async"
-      onError={() => {
-        if (!usedFallback && item.image && item.image !== src) {
-          setUsedFallback(true);
-          setSrc(item.image);
-        } else {
-          setSrc("");
-        }
-      }}
-    /> : <i />}
-  </span>;
-}
-
 function Metric({ label, value, note }: { label: string; value: string; note: string }) { return <div className="profile-metric"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>; }
-function plainText(value: string) { return value.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/\s+/g, " ").trim(); }

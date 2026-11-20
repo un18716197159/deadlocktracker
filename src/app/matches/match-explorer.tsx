@@ -1,53 +1,73 @@
 import Link from "next/link";
-import type { HeroAsset, MatchListEntry } from "../../lib/deadlock-api";
+import type { HeroAsset, MatchListEntry, RankAsset } from "../../lib/deadlock-api";
+import { rankImage } from "../../lib/assets";
+import { T } from "../../lib/i18n/provider";
+import { teamName } from "../../lib/teams";
+import LocalTime from "../components/local-time";
+import RankBadge from "../components/rank-badge";
+import "./match-explorer.css";
 
 type Filters = { heroId: string; period: string; duration: string; gameMode: string; matchMode: string; sort: string };
-type Props = { rows: MatchListEntry[]; heroes: HeroAsset[]; filters: Filters; matchError?: string; invalidMatchId: boolean; nextHref?: string };
+type Props = { rows: MatchListEntry[]; heroes: HeroAsset[]; ranks: RankAsset[]; filters: Filters; matchError?: string; invalidMatchId: boolean; nextHref?: string };
 
-function date(value?: number) {
-  return typeof value === "number" ? new Date(value * 1000).toLocaleString() : "Unavailable";
-}
 function duration(value?: number) {
-  return typeof value === "number" ? `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, "0")}` : "Unavailable";
+  return typeof value === "number" ? `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, "0")}` : "—";
+}
+const pretty = (value?: string) => (value ? value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "");
+
+function AverageRank({ badge, ranks }: { badge?: number; ranks: RankAsset[] }) {
+  if (typeof badge !== "number" || badge <= 0) return <span className="mx-muted">—</span>;
+  const tier = Math.floor(badge / 10);
+  const sub = badge % 10;
+  const asset = ranks.find((rank) => rank.tier === tier);
+  return (
+    <span className="mx-rank">
+      <RankBadge tier={tier} subrank={sub} name={asset?.name} image={rankImage(asset)} size="sm" />
+      <span>{asset?.name ?? `Tier ${tier}`}{sub ? ` ${sub}` : ""}</span>
+    </span>
+  );
 }
 
-export default function MatchExplorer({ rows, heroes, filters, matchError, invalidMatchId, nextHref }: Props) {
-  return <main className="content-inner match-explorer-page">
-    <div className="page-heading"><div><p className="eyebrow">MATCH DATABASE</p><h1>Match Explorer<span>.</span></h1><p className="muted">Browse the global match feed or open a match directly by ID.</p></div></div>
-    <form className="match-id-search" action="/matches" method="get">
-      <label htmlFor="match-id">MATCH ID</label><input id="match-id" name="match_id" inputMode="numeric" pattern="[0-9]+" placeholder="Enter a match ID" />
-      <button type="submit" className="refresh-button">Open match</button>
-    </form>
-    {invalidMatchId && <p className="api-message error-message" role="alert">Enter a numeric match ID within the API range.</p>}
-    <form className="match-filters" action="/matches" method="get">
-      <label>HERO<select name="hero_id" defaultValue={filters.heroId} aria-label="Filter by hero">
-        <option value="all">All heroes</option>{heroes.map((hero) => <option value={hero.id} key={hero.id}>{hero.name}</option>)}
-      </select></label>
-      <label>TIME PERIOD<select name="period" defaultValue={filters.period}><option value="1d">Last 24 hours</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="90d">Last 90 days</option><option value="all">All available</option></select></label>
-      <label>DURATION<select name="duration" defaultValue={filters.duration}><option value="all">Any duration</option><option value="short">Up to 15 minutes</option><option value="medium">15–30 minutes</option><option value="long">Over 30 minutes</option></select></label>
-      <label>GAME MODE<select name="game_mode" defaultValue={filters.gameMode}><option value="all">All modes</option><option value="normal">Normal</option><option value="street_brawl">Street Brawl</option></select></label>
-      <label>MATCH TYPE<select name="match_mode" defaultValue={filters.matchMode}><option value="all">All types</option><option value="ranked,unranked">Ranked + Unranked</option><option value="ranked">Ranked</option><option value="unranked">Unranked</option></select></label>
-      <label>SORT<select name="sort" defaultValue={filters.sort}><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
-      <button type="submit" className="refresh-button">Apply filters</button>
-    </form>
-    <p className="match-explorer-note">Filters and sort are sent to Deadlock API. Results are paged by match ID; the API does not expose a total count or offset.</p>
-    {matchError && <section className="panel match-empty" role="alert"><h2>Match feed unavailable</h2><p>Deadlock API could not load the global match list. {matchError}</p><Link className="match-back-link" href="/matches">Retry</Link></section>}
+export default function MatchExplorer({ rows, heroes, ranks, filters, matchError, invalidMatchId, nextHref }: Props) {
+  return <main className="content-inner mx-page">
+    <div className="mx-heading"><h1><T k="matches.title" /></h1><p><T k="matches.subtitle" /></p></div>
+
+    <section className="mx-toolbar">
+      <form className="mx-id" action="/matches" method="get">
+        <label htmlFor="match-id"><T k="matches.matchId" /></label>
+        <div><input id="match-id" name="match_id" inputMode="numeric" pattern="[0-9]+" placeholder="1234567" /><button type="submit"><T k="matches.open" /></button></div>
+      </form>
+      <form className="mx-filters" action="/matches" method="get">
+        <label><span><T k="matches.hero" /></span><select name="hero_id" defaultValue={filters.heroId}><option value="all">All</option>{heroes.map((hero) => <option value={hero.id} key={hero.id}>{hero.name}</option>)}</select></label>
+        <label><span><T k="matches.period" /></span><select name="period" defaultValue={filters.period}><option value="1d">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="90d">90d</option><option value="all">All</option></select></label>
+        <label><span><T k="matches.duration" /></span><select name="duration" defaultValue={filters.duration}><option value="all">Any</option><option value="short">&lt; 15 min</option><option value="medium">15–30 min</option><option value="long">&gt; 30 min</option></select></label>
+        <label><span><T k="matches.mode" /></span><select name="game_mode" defaultValue={filters.gameMode}><option value="all">All</option><option value="normal">Normal</option><option value="street_brawl">Street Brawl</option></select></label>
+        <label><span><T k="matches.type" /></span><select name="match_mode" defaultValue={filters.matchMode}><option value="all">All</option><option value="ranked,unranked">Ranked + Unranked</option><option value="ranked">Ranked</option><option value="unranked">Unranked</option></select></label>
+        <label><span><T k="matches.sort" /></span><select name="sort" defaultValue={filters.sort}><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
+        <button type="submit"><T k="common.apply" /></button>
+      </form>
+    </section>
+
+    {invalidMatchId && <p className="api-message error-message" role="alert">Match ID must be numeric.</p>}
+    {matchError && <section className="mx-empty" role="alert"><h2>Match feed unavailable</h2><p>{matchError}</p><Link href="/matches"><T k="common.retry" /></Link></section>}
+
     {!matchError && rows.length > 0 && <>
-      <div className="section-title"><h2>Matches</h2><span className="live-tag">{rows.length} RESULTS</span><span className="line" /></div>
-      <div className="match-explorer-table" role="table" aria-label="Matches">
-        <div className="match-explorer-head" role="row"><span role="columnheader">MATCH</span><span role="columnheader">PLAYED</span><span role="columnheader">MODES</span><span role="columnheader">DURATION</span><span role="columnheader">RATING</span><span role="columnheader">RESULT</span></div>
+      <div className="mx-count"><T k="matches.results" vars={{ n: rows.length }} /></div>
+      <div className="mx-list">
+        <div className="mx-row mx-head"><span><T k="matches.played" /></span><span><T k="matches.mode" /></span><span><T k="matches.rating" /></span><span><T k="matches.duration" /></span><span><T k="matches.result" /></span></div>
         {rows.map((match) => {
-          const result = match.not_scored ? "Not scored" : match.winning_team === undefined ? "Unavailable" : `Team ${match.winning_team + 1} victory`;
-          const resultClass = match.winning_team === undefined || match.not_scored ? "" : "match-explorer-result-win";
-          return <Link className="match-explorer-row" role="row" href={`/matches/${match.match_id}`} key={match.match_id}>
-            <strong role="cell">#{match.match_id}</strong><span role="cell">{date(match.start_time)}</span><span role="cell">{[match.game_mode, match.match_mode].filter(Boolean).join(" · ") || "Mode unavailable"}</span><span role="cell">{duration(match.duration_s)}</span><span role="cell">{typeof match.average_badge === "number" ? match.average_badge : "Unavailable"}</span><span role="cell" className={resultClass}>{result}</span>
+          const scored = !match.not_scored && match.winning_team !== undefined;
+          return <Link className="mx-row" href={`/matches/${match.match_id}`} key={match.match_id}>
+            <span className="mx-when"><b><LocalTime seconds={match.start_time} /></b><small>#{match.match_id}</small></span>
+            <span className="mx-chips">{match.match_mode && <i data-kind={match.match_mode}>{pretty(match.match_mode)}</i>}{match.game_mode && match.game_mode !== "normal" && <i>{pretty(match.game_mode)}</i>}</span>
+            <AverageRank badge={match.average_badge} ranks={ranks} />
+            <span className="mx-dur">{duration(match.duration_s)}</span>
+            <span className="mx-result" data-team={scored ? match.winning_team : "none"}>{scored ? <T k="matches.team" vars={{ team: teamName(match.winning_team) }} /> : <T k="matches.notScored" />}</span>
           </Link>;
         })}
       </div>
-      {nextHref && <div className="match-load-more"><Link href={nextHref} className="refresh-button">Load next {rows.length} matches</Link></div>}
+      {nextHref && <div className="mx-more"><Link href={nextHref}><T k="matches.next" /></Link></div>}
     </>}
-    {!matchError && rows.length === 0 && <section className="panel match-empty"><h2>No matches found</h2><p>The API returned no matches for these filters. Try a wider time period or remove a filter.</p></section>}
-    {heroes.length === 0 && <p className="match-explorer-note">Hero names are unavailable from the assets endpoint; match search and ID lookup remain available.</p>}
-    <footer>DEADLOCK INTELLIGENCE · MATCH EXPLORER</footer>
+    {!matchError && rows.length === 0 && <section className="mx-empty"><h2>No matches found</h2><p>Try a wider time period or remove a filter.</p></section>}
   </main>;
 }

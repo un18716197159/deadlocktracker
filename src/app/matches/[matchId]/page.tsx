@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "../../components/app-shell";
+import LocalTime from "../../components/local-time";
+import { TEAMS } from "../../../lib/teams";
 import { getHeroes, getMatchDetails, getMatchItems, getSteamProfiles } from "../../../lib/deadlock-api";
 import { heroPortrait, itemImage } from "../../../lib/assets";
 
@@ -12,6 +14,34 @@ export async function generateMetadata({ params }: Props) {
 }
 const fmtDuration = (value?: number) => value === undefined ? "Unavailable" : `${Math.floor(value / 60)}:${String(value % 60).padStart(2, "0")}`;
 const fmtStat = (value?: number) => value === undefined ? "—" : value.toLocaleString();
+
+function TeamSummary({ players }: { players: Array<{ team?: number; kills?: number; deaths?: number; assists?: number; net_worth?: number; player_damage?: number; player_healing?: number; player_damage_taken?: number }> }) {
+  const sum = (team: number, pick: (player: (typeof players)[number]) => number | undefined) => players.filter((player) => player.team === team).reduce((total, player) => total + (pick(player) ?? 0), 0);
+  const rows = [
+    { label: "Souls (net worth)", values: [0, 1].map((team) => sum(team, (p) => p.net_worth)) },
+    { label: "Kills", values: [0, 1].map((team) => sum(team, (p) => p.kills)) },
+    { label: "Player damage", values: [0, 1].map((team) => sum(team, (p) => p.player_damage)) },
+    { label: "Healing", values: [0, 1].map((team) => sum(team, (p) => p.player_healing)) },
+    { label: "Damage taken", values: [0, 1].map((team) => sum(team, (p) => p.player_damage_taken)) },
+  ].filter((row) => row.values[0] + row.values[1] > 0);
+  if (!rows.length) return null;
+  return (
+    <section className="panel ms-summary">
+      <div className="ms-names"><b style={{ color: TEAMS[0].color }}>{TEAMS[0].name}</b><b style={{ color: TEAMS[1].color }}>{TEAMS[1].name}</b></div>
+      {rows.map((row) => {
+        const total = row.values[0] + row.values[1];
+        const left = total ? (row.values[0] / total) * 100 : 50;
+        return (
+          <div className="ms-row" key={row.label}>
+            <strong>{row.values[0].toLocaleString()}</strong>
+            <div className="ms-mid"><small>{row.label}</small><span className="ms-bar" aria-hidden="true"><i style={{ width: `${left}%`, background: TEAMS[0].color }} /><i style={{ width: `${100 - left}%`, background: TEAMS[1].color }} /></span></div>
+            <strong>{row.values[1].toLocaleString()}</strong>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
 
 async function Content({ params, searchParams }: Props) {
   const [{ matchId }, search] = await Promise.all([params, searchParams]);
@@ -29,11 +59,12 @@ async function Content({ params, searchParams }: Props) {
   const winner = match.not_scored ? undefined : match.winning_team === 0 || match.winning_team === 1 ? match.winning_team : undefined;
   return <main className="content-inner match-detail">
     <Link className="match-back-link" href={accountId ? "/players/" + accountId : "/matches"}>{accountId ? "← Back to player profile" : "← Match Explorer"}</Link>
-    <div className="page-heading match-heading"><div><p className="eyebrow">MATCH DETAILS</p><h1>Match <span>#{match.match_id ?? matchId}</span></h1><p className="muted">Played {match.start_time === undefined ? "Unavailable" : new Date(match.start_time * 1000).toLocaleString()} · {fmtDuration(match.duration_s)}</p></div><span className="match-result-tag">{winner === undefined ? match.not_scored ? "NOT SCORED" : "RESULT UNAVAILABLE" : `TEAM ${winner + 1} VICTORY`}</span></div>
+    <div className="page-heading match-heading"><div><p className="eyebrow">MATCH DETAILS</p><h1>Match <span>#{match.match_id ?? matchId}</span></h1><p className="muted">Played <LocalTime seconds={match.start_time} mode="full" /> · {fmtDuration(match.duration_s)}</p></div><span className="match-result-tag" style={winner === undefined ? undefined : { color: TEAMS[winner].color }}>{winner === undefined ? match.not_scored ? "NOT SCORED" : "RESULT UNAVAILABLE" : `${TEAMS[winner].name.toUpperCase()} WON`}</span></div>
+    {match.players.length > 0 && <TeamSummary players={match.players} />}
     {!match.players.length ? <section className="panel match-empty"><h2>Player data unavailable</h2><p>No player rows were returned in match metadata.</p></section> : <div className="match-teams">{[0, 1].map((team) => {
       const roster = match.players.filter((player) => player.team === team).sort((a, b) => (a.player_slot ?? 99) - (b.player_slot ?? 99));
       return <section className={`panel match-team ${winner === team ? "winning-team" : ""}`} key={team}>
-        <header className="match-team-heading"><div><p className="eyebrow">TEAM {team + 1}</p><h2>{winner === undefined ? "Roster" : winner === team ? "Victory" : "Defeat"}</h2></div><span>{roster.length} players</span></header>
+        <header className="match-team-heading"><div><p className="eyebrow" style={{ color: TEAMS[team].color }}>{TEAMS[team].name.toUpperCase()}</p><h2>{winner === undefined ? "Roster" : winner === team ? "Victory" : "Defeat"}</h2></div><span>{roster.length} players</span></header>
         {!roster.length ? <p className="profile-note">No players returned for this team.</p> : <div className="match-roster">{roster.map((player) => {
           const hero = player.hero_id === undefined ? undefined : heroById.get(player.hero_id);
           const profile = profileById.get(player.account_id);

@@ -1,3 +1,5 @@
+import { localItemIcon } from "./item-icons";
+
 export type HeroAssetLike = {
   images?: {
     icon_image_small_webp?: string | null;
@@ -9,7 +11,7 @@ export type HeroAssetLike = {
   } | null;
 };
 
-export type ItemAssetLike = { image_webp?: string | null; image?: string | null };
+export type ItemAssetLike = { name?: string | null; image_webp?: string | null; image?: string | null };
 export type RankAssetLike = { images?: Record<string, string | null> };
 
 function firstAsset(...values: Array<string | null | undefined>) {
@@ -28,8 +30,14 @@ export function heroBackground(hero: HeroAssetLike) {
   return firstAsset(hero.images?.background_image_webp, hero.images?.background_image, heroCardImage(hero));
 }
 
+/** Prefers the current in-game icon we host ourselves; falls back to the Deadlock API image. */
 export function itemImage(item: ItemAssetLike) {
-  return firstAsset(item.image_webp, item.image);
+  return localItemIcon(item.name) ?? firstAsset(item.image_webp, item.image);
+}
+
+/** True for the painted in-game icons (as opposed to the old white glyph silhouettes). */
+export function isColorItemIcon(src: string | null | undefined) {
+  return typeof src === "string" && src.startsWith("/item-icons/");
 }
 
 export function rankImage(rank: RankAssetLike | undefined, size: "small" | "large" = "small") {

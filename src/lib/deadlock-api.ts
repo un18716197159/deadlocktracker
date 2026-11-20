@@ -1,12 +1,10 @@
 import "server-only";
 import { cachedUpstream } from "./db/cache";
-import { cacheNowSeconds, DEADLOCK_API_ORIGIN, deadlockHeaders } from "./upstream";
+import { cacheNowSeconds, deadlockHeaders } from "./upstream";
 import { cacheLife } from "next/cache";
 
-const API_BASE = DEADLOCK_API_ORIGIN;
+const API_BASE = "https://api.deadlock-api.com";
 const REQUEST_TIMEOUT_MS = 12_000;
-const ASSET_CACHE_MS = 5 * 60 * 1000;
-const assetCache = new Map<string, { expiresAt: number; value: unknown }>();
 
 export type SteamProfile = {
   account_id?: number;
@@ -108,12 +106,18 @@ async function requestUncached<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS):
   }
 }
 
+/**
+ * Lists that every visitor shares (assets, analytics). Cached by Next.js
+ * ("use cache") instead of a hand-made Map: a Map checked with Date.now()
+ * breaks prerendering under Cache Components.
+ */
 async function requestAssetList<T>(path: string, errorMessage: string): Promise<T[]> {
-  const cached = assetCache.get(path);
-  if (cached && cached.expiresAt > Date.now()) return cached.value as T[];
+  "use cache";
+  // Assets change rarely; analytics should refresh about every 10 minutes.
+  if (path.includes("/v1/assets/")) cacheLife("days");
+  else cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
   const result = await request<unknown>(path);
   if (!Array.isArray(result)) throw new DeadlockApiError(errorMessage, 502);
-  assetCache.set(path, { expiresAt: Date.now() + ASSET_CACHE_MS, value: result });
   return result as T[];
 }
 
@@ -131,9 +135,13 @@ export async function getMatchHistory(accountId: number): Promise<MatchHistoryEn
 }
 
 export async function getHeroes(): Promise<HeroAsset[]> {
+  return getHeroesIn("english");
+}
+
+export async function getHeroesIn(language: string): Promise<HeroAsset[]> {
   "use cache";
   cacheLife("days");
-  return requestAssetList<HeroAsset>("/v1/assets/heroes?language=english&only_active=true", "Deadlock API returned an invalid hero list.");
+  return requestAssetList<HeroAsset>(`/v1/assets/heroes?language=${encodeURIComponent(language)}&only_active=true`, "Deadlock API returned an invalid hero list.");
 }
 
 export async function getPlayerRank(accountId: number): Promise<PlayerRank> {
@@ -165,16 +173,64 @@ export async function getRanks(): Promise<RankAsset[]> {
 }
 
 export type HeroMeta = { hero_id: number; bucket: number; wins: number; losses: number; matches: number; matches_per_bucket?: number };
-export type HeroAbility = { id?: number; name?: string; description?: { desc?: string | null; active?: string | null; passive?: string | null } | null; image?: string | null; image_webp?: string | null };
+export type HeroAbility = { id?: number; name?: string; description?: { desc?: string | null; active?: string | null; passive?: string | null } | null; image?: string | null; image_webp?: string | null; properties?: Record<string, unknown> | null; upgrades?: unknown; [key: string]: unknown };
 export type HeroRecord = { hero: HeroAsset; stat: HeroMeta | null; win: number | null; pick: number | null };
 
 export async function getHeroStats(): Promise<HeroMeta[]> {
   return requestAssetList<HeroMeta>("/v1/analytics/hero-stats?bucket=no_bucket&game_mode=normal&match_mode=ranked%2Cunranked", "Deadlock API returned invalid hero statistics.");
 }
-export async function getHeroAbilities(heroId: number): Promise<HeroAbility[]> {
+export type HeroMatchup = { heroId: number; matches: number; wins: number; winRate: number };
+const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : null);
+
+/** Parses rows like { hero_id, enemy_hero_id | hero_id1/hero_id2, wins, matches_played | matches } defensively. */
+function parseMatchups(rows: unknown[], heroId: number, otherKeys: string[]): HeroMatchup[] {
+  const result: HeroMatchup[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const a = num(r.hero_id) ?? num(r.hero_id1);
+    const otherKey = otherKeys.find((key) => num(r[key]) !== null);
+    const b = otherKey ? num(r[otherKey]) : null;
+    const matches = num(r.matches_played) ?? num(r.matches);
+    const wins = num(r.wins);
+    if (a === null || b === null || matches === null || wins === null || matches <= 0) continue;
+    if (a === heroId) result.push({ heroId: b, matches, wins, winRate: (wins / matches) * 100 });
+  }
+  return result;
+}
+
+export async function getHeroCounters(heroId: number): Promise<HeroMatchup[]> {
+  const rows = await requestAssetList<unknown>("/v1/analytics/hero-counter-stats?game_mode=normal&match_mode=ranked%2Cunranked", "Deadlock API returned invalid counter statistics.");
+  return parseMatchups(rows, heroId, ["enemy_hero_id", "hero_id2"]).filter((row) => row.heroId !== heroId);
+}
+
+export async function getHeroSynergies(heroId: number): Promise<HeroMatchup[]> {
+  const rows = await requestAssetList<unknown>("/v1/analytics/hero-synergy-stats?game_mode=normal&match_mode=ranked%2Cunranked", "Deadlock API returned invalid synergy statistics.");
+  // Synergy rows may list each pair once, so also read the mirrored side.
+  const direct = parseMatchups(rows, heroId, ["hero_id2"]);
+  const mirrored = rows.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const r = row as Record<string, unknown>;
+    return num(r.hero_id2) === heroId && num(r.hero_id1) !== null ? [{ ...r, hero_id1: r.hero_id2, hero_id2: r.hero_id1 }] : [];
+  });
+  const seen = new Set(direct.map((row) => row.heroId));
+  return [...direct, ...parseMatchups(mirrored, heroId, ["hero_id2"]).filter((row) => !seen.has(row.heroId))].filter((row) => row.heroId !== heroId);
+}
+
+export type HeroRatingFilter = "all" | "0-29" | "30-59" | "60-89" | "90-116";
+export async function getHeroStatsForRating(rating: HeroRatingFilter): Promise<HeroMeta[]> {
+  const params = new URLSearchParams({ bucket: "no_bucket", game_mode: "normal", match_mode: "ranked,unranked" });
+  if (rating !== "all") {
+    const [min, max] = rating.split("-");
+    params.set("min_average_badge", min);
+    params.set("max_average_badge", max);
+  }
+  return requestAssetList<HeroMeta>(`/v1/analytics/hero-stats?${params}`, "Deadlock API returned invalid hero statistics.");
+}
+export async function getHeroAbilities(heroId: number, language = "english"): Promise<HeroAbility[]> {
   "use cache";
   cacheLife("minutes");
-  return requestAssetList<HeroAbility>("/v1/assets/items/by-hero-id/" + heroId + "?language=english", "Deadlock API returned invalid hero abilities.");
+  return requestAssetList<HeroAbility>("/v1/assets/items/by-hero-id/" + heroId + "?language=" + encodeURIComponent(language), "Deadlock API returned invalid hero abilities.");
 }
 export async function getHeroCatalog(): Promise<HeroRecord[]> {
   "use cache";
@@ -382,21 +438,69 @@ async function getPlayerScoreboardStats(accountIds: number[], period: "30d" | "9
   return result;
 }
 
+async function getSteamProfilesChunked(accountIds: number[]): Promise<SteamProfile[]> {
+  const ids = [...new Set(accountIds.filter((id) => Number.isSafeInteger(id) && id >= 0))];
+  const chunks: number[][] = [];
+  for (let index = 0; index < ids.length; index += 400) chunks.push(ids.slice(index, index + 400));
+  const results = await Promise.allSettled(chunks.map((chunk) => getSteamProfiles(chunk)));
+  return results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+}
+
 export async function getLeaderboardPlayers(options: { region: LeaderboardRegion; heroId?: number; leaderboardId?: number; period: "30d" | "90d" | "all" }): Promise<LeaderboardPlayer[]> {
   const entries = await getRegionalLeaderboard(options.region, options.heroId, options.leaderboardId);
-  const accountIds = [...new Set(entries.flatMap((entry) => entry.possible_account_ids.length === 1 ? entry.possible_account_ids : []))];
-  const [profileResult, rankResult, rankAssetsResult, statsResult] = await Promise.allSettled([
-    getSteamProfiles(accountIds), getPlayerRanks(accountIds), getRanks(), getPlayerScoreboardStats(accountIds, options.period, options.heroId),
+
+  // Entries can list several possible accounts for one name. Load all candidates' Steam profiles and
+  // keep the one whose Steam name matches the leaderboard name exactly (only if that is unambiguous).
+  const candidateIds = [...new Set(entries.flatMap((entry) => entry.possible_account_ids))].slice(0, 1600);
+  const profileList = await getSteamProfilesChunked(candidateIds).catch(() => [] as SteamProfile[]);
+  const profilesById = new Map(profileList.flatMap((profile) => typeof profile.account_id === "number" ? [[profile.account_id, profile] as const] : []));
+  const norm = (value: string | undefined | null) => (value ?? "").normalize("NFKC").trim().toLocaleLowerCase();
+  const resolveAccount = (entry: OfficialLeaderboardEntry): number | null => {
+    if (entry.possible_account_ids.length === 1) return entry.possible_account_ids[0];
+    // Several candidates: take the one whose Steam name matches the leaderboard name (first one if several do).
+    return entry.possible_account_ids.find((id) => norm(profilesById.get(id)?.personaname) === norm(entry.account_name)) ?? null;
+  };
+  const resolved = entries.map((entry): { entry: OfficialLeaderboardEntry; accountId: number | null } => ({ entry, accountId: resolveAccount(entry) }));
+
+  // Still unresolved (no candidates, or none matched): look the name up with player search, best 40 places first.
+  const unresolved = resolved.filter((row) => row.accountId === null).slice(0, 40);
+  for (let index = 0; index < unresolved.length; index += 8) {
+    const batch = unresolved.slice(index, index + 8);
+    const found = await Promise.allSettled(batch.map((row) => searchPlayers(row.entry.account_name)));
+    batch.forEach((row, position) => {
+      const result = found[position];
+      if (result.status !== "fulfilled") return;
+      const exact = result.value.filter((profile) => typeof profile.account_id === "number" && norm(profile.personaname) === norm(row.entry.account_name));
+      const preferred = exact.filter((profile) => row.entry.possible_account_ids.includes(profile.account_id as number));
+      const pool = preferred.length ? preferred : exact;
+      const best = [...pool].sort((left, right) => ((right as { matches_played_last_30d?: number }).matches_played_last_30d ?? 0) - ((left as { matches_played_last_30d?: number }).matches_played_last_30d ?? 0))[0];
+      if (best && typeof best.account_id === "number") {
+        row.accountId = best.account_id;
+        profilesById.set(best.account_id, best);
+      }
+    });
+  }
+  const accountIds = [...new Set(resolved.flatMap(({ accountId }) => accountId === null ? [] : [accountId]))];
+
+  const [rankResult, rankAssetsResult, statsResult] = await Promise.allSettled([
+    getPlayerRanks(accountIds), getRanks(), getPlayerScoreboardStats(accountIds, options.period, options.heroId),
   ]);
-  const profilesById = new Map(profileResult.status === "fulfilled" ? profileResult.value.flatMap((profile) => typeof profile.account_id === "number" ? [[profile.account_id, profile] as const] : []) : []);
   const ranksById = new Map(rankResult.status === "fulfilled" ? rankResult.value.map((rank) => [rank.account_id, rank]) : []);
   const rankAssets = rankAssetsResult.status === "fulfilled" ? rankAssetsResult.value : [];
   const statsById = statsResult.status === "fulfilled" ? statsResult.value : new Map<number, LeaderboardPlayerStats>();
-  return entries.map((entry) => {
-    const accountId = entry.possible_account_ids.length === 1 ? entry.possible_account_ids[0] : null;
+  return resolved.map(({ entry, accountId }) => {
     const profile = accountId === null ? undefined : profilesById.get(accountId);
     const currentRank = accountId === null ? undefined : ranksById.get(accountId);
-    const rankName = typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.name || `Tier ${currentRank.rank}` : null;
-    return { place: entry.rank, name: entry.account_name, accountId, avatar: profile?.avatarfull || profile?.avatar || null, rank: rankName, rankTier: typeof currentRank?.rank === "number" ? currentRank.rank : null, rankSubrank: typeof currentRank?.subrank === "number" ? currentRank.subrank : null, rankImage: typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank)?.images?.small_webp || rankAssets.find((asset) => asset.tier === currentRank.rank)?.images?.small || null : null, topHeroIds: entry.top_hero_ids, stats: accountId === null ? null : statsById.get(accountId) ?? null };
+    const rankAsset = typeof currentRank?.rank === "number" ? rankAssets.find((asset) => asset.tier === currentRank.rank) : undefined;
+    return {
+      place: entry.rank, name: entry.account_name, accountId,
+      avatar: profile?.avatarfull || profile?.avatar || null,
+      rank: typeof currentRank?.rank === "number" ? rankAsset?.name || `Tier ${currentRank.rank}` : null,
+      rankTier: typeof currentRank?.rank === "number" ? currentRank.rank : null,
+      rankSubrank: typeof currentRank?.subrank === "number" ? currentRank.subrank : null,
+      rankImage: rankAsset?.images?.small_webp || rankAsset?.images?.small || null,
+      topHeroIds: entry.top_hero_ids,
+      stats: accountId === null ? null : statsById.get(accountId) ?? null,
+    };
   });
 }

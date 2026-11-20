@@ -1,0 +1,76 @@
+/* =========================================================================
+   Flat theme — loaded last. Neutral dark palette, no gradients/glow,
+   closer to Statlocker's clean look. Overrides theme.css tokens and surfaces.
+   ========================================================================= */
+:root {
+  --bg: #0e1015;
+  --bg-soft: #12151b;
+  --panel: #161920;
+  --panel-raised: #1b1f27;
+  --panel-hover: #212630;
+  --line: #242a34;
+  --line-strong: #353c49;
+  --ink: #eceff4;
+  --muted: #9aa3b2;
+  --subtle: #6f7888;
+  --accent: #7c6cf0;
+  --accent-bright: #a99bff;
+  --accent-dim: #26224a;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --glow: none;
+}
+html, body { background: var(--bg); }
+body { background-image: none; }
+
+/* Surfaces: flat fills */
+.app-shell :is(.panel, .metric, .match-team, .match-heading, .item-detail-hero, .build-detail-hero, .compare-picker, .compare-placeholder, .profile-metric, .player-results),
+.app-shell :is(.items-filters, .builds-filters, .leaderboard-filters, .item-detail-filters, .heroes-toolbar) {
+  background: var(--panel);
+  box-shadow: none;
+}
+.app-shell :is(input, select) { background: #0e1015; }
+.app-shell :is(input, select):focus { box-shadow: none; }
+
+/* Buttons: solid */
+.app-shell :is(.refresh-button, .search-bar button, .hero-search button) {
+  background: var(--accent);
+  box-shadow: none;
+  border-radius: var(--radius-sm);
+}
+.app-shell :is(.refresh-button, .search-bar button, .hero-search button):hover:not(:disabled) { background: #8f81f5; transform: none; box-shadow: none; }
+
+/* Hover: no glow */
+.app-shell :is(.hero-card, .item-card, .community-build-card):hover { box-shadow: none; border-color: #4a5365; }
+.item-tile:hover { transform: none; }
+
+/* Top navigation */
+.topnav { background: #0e1015f2; backdrop-filter: none; border-bottom: 1px solid var(--line); }
+.topnav-inner { box-sizing: border-box; }
+.topnav .brand { display: flex; align-items: center; gap: 10px; padding: 0; color: var(--ink); text-decoration: none; }
+.brand-name { font: 800 17px var(--font-ui); letter-spacing: -.02em; }
+.brand-name b { color: var(--accent-bright); font-weight: 800; }
+.topnav-links { gap: 2px; }
+.topnav-link { height: 34px; border-radius: 5px; font-weight: 600; }
+.topnav-link:hover { background: #1b1f27; }
+.topnav-link[aria-current="page"] { background: #1f2430; box-shadow: none; color: #fff; }
+.topnav-inner > .account-menu { margin-left: 0; }
+
+/* Home (prefixed with .app-shell so it beats the page-level home.css regardless of load order) */
+.app-shell .hero { position: relative; z-index: 5; isolation: auto; padding: clamp(40px, 7vw, 84px) 0 clamp(24px, 4vw, 40px); }
+.app-shell .hero::before { display: none; }
+.app-shell .hero h1 { max-width: none; background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); -webkit-text-fill-color: var(--ink); font-size: clamp(38px, 6.5vw, 68px); letter-spacing: -.035em; }
+.app-shell .hero-search { z-index: 40; }
+.app-shell .hero-search form { background: var(--panel); backdrop-filter: none; }
+.app-shell .hero-results { z-index: 60; background: #161920; box-shadow: 0 14px 34px #000a; }
+.app-shell .hub-grid { position: relative; z-index: 0; gap: 10px; }
+.app-shell .hub-card { background: var(--panel); border-radius: var(--radius-md); }
+.app-shell .hub-card::after { display: none; }
+.app-shell .hub-card:hover { transform: none; box-shadow: none; border-color: #4a5365; background: var(--panel-hover); }
+.app-shell .hub-card em { color: var(--subtle); }
+
+/* Misc */
+.app-shell .content-inner { animation: none; }
+.app-shell .eyebrow { color: var(--subtle); letter-spacing: .1em; }
+.app-shell :is(.page-heading h1, .build-detail-hero h1) span { display: none; }
+.app-shell::before, .app-shell::after { display: none; }

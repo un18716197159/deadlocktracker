@@ -1,0 +1,98 @@
+/* Visual polish layer. Imported last, so it wins over the older stylesheets. */
+
+/* ---- Top bar logo: the old sidebar padding pushed it out of the bar ---- */
+.app-shell .topnav .brand { padding: 0; margin: 0; min-height: 0; }
+
+/* ---- Buttons: collapsed height + accent-coloured first letter ---- */
+.app-shell .refresh-button,
+.app-shell .search-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 18px; line-height: 1; white-space: nowrap; }
+.app-shell .refresh-button:first-letter { color: inherit; }
+
+/* ---- Heroes ---- */
+.app-shell .heroes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.app-shell .hero-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.app-shell .hero-card:hover { border-color: var(--accent); background: var(--panel); transform: translateY(-3px); box-shadow: 0 16px 36px #0008; }
+.app-shell .hero-card-art { position: relative; height: auto; aspect-ratio: 4 / 5; border-bottom: 0; background-size: cover; background-position: center top; background-repeat: no-repeat; }
+.app-shell .hero-card-art::after { position: absolute; inset: auto 0 0; height: 50%; background: linear-gradient(0deg, var(--panel) 0%, transparent 100%); content: ""; pointer-events: none; }
+.app-shell .hero-card-art span { z-index: 1; }
+.app-shell .hero-card-body { position: relative; z-index: 1; margin-top: -54px; padding: 0 14px 14px; }
+.app-shell .hero-card-body .eyebrow { overflow: hidden; margin: 0 0 4px; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell .hero-card-body h2 { margin: 0; color: var(--ink); font: 700 21px var(--font-ui); letter-spacing: -.02em; }
+.app-shell .hero-card-body h2 + .hero-playstyle,
+.app-shell .hero-card-stats ~ .hero-playstyle,
+.app-shell .hero-card-link { display: none; }
+.app-shell .hero-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.app-shell .hero-card-stats small { color: var(--subtle); font: 600 9px var(--font-data); letter-spacing: .08em; }
+.app-shell .hero-card-stats strong { display: block; margin-top: 3px; color: var(--ink); font: 700 15px var(--font-data); }
+.app-shell .hero-card-stats strong[data-tone="good"] { color: #7fd18a; }
+.app-shell .hero-card-stats strong[data-tone="bad"] { color: #e07a85; }
+
+/* ---- Items: slot-coloured tiles like the in-game shop ---- */
+.app-shell .items-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.app-shell .item-card { --slot: #8a8296; --slot-deep: #1c1822; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); }
+.app-shell .item-card[data-slot="weapon"] { --slot: #e69a3c; --slot-deep: #3a2410; }
+.app-shell .item-card[data-slot="vitality"] { --slot: #7fbd5a; --slot-deep: #1f3317; }
+.app-shell .item-card[data-slot="spirit"] { --slot: #b98bf0; --slot-deep: #2d1c47; }
+.app-shell .item-card:hover { border-color: var(--slot); background: var(--panel); }
+.app-shell .item-card-art { position: relative; display: grid; place-items: center; height: 112px; border-bottom: 2px solid var(--slot); background: radial-gradient(circle at 50% 30%, var(--slot-deep) 0%, #0f0c14 82%); }
+.app-shell .item-card-art img { width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--slot) 55%, transparent)); transition: transform .2s ease; }
+.app-shell .item-card:hover .item-card-art img { transform: scale(1.12); }
+.app-shell .item-card-art[data-tier]::before { position: absolute; top: 9px; left: 11px; color: var(--slot); content: "T" attr(data-tier); font: 700 10px var(--font-data); letter-spacing: .1em; }
+.app-shell .item-card-meta span { color: var(--slot); }
+.app-shell .item-card-content > strong { color: var(--ink); font: 600 16px var(--font-ui); }
+
+/* ---- Community builds ---- */
+.app-shell .builds-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.app-shell .community-build-card { display: flex; flex-direction: column; gap: 14px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.app-shell .community-build-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 14px 32px #0007; }
+.app-shell .community-build-top { align-items: center; gap: 14px; padding: 16px 16px 0; }
+.app-shell .community-build-hero-art { flex: 0 0 64px; width: 64px; height: 64px; border: 2px solid var(--accent); border-radius: 10px; background-size: cover; background-position: center top; }
+.app-shell .community-build-top h2 { display: -webkit-box; margin: 3px 0 4px; overflow: hidden; color: var(--ink); font: 700 17px/1.25 var(--font-ui); white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.app-shell .community-build-top p:not(.eyebrow) { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.4; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.app-shell .community-build-fav { align-self: flex-start; margin-left: auto; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; color: #f2c75c; font: 700 11px var(--font-data); white-space: nowrap; }
+.app-shell .community-build-items { display: grid; gap: 12px; margin: 0; padding: 14px 16px; border-top: 1px solid var(--line); border-bottom: 0; }
+.app-shell .community-build-items > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; }
+.app-shell .community-build-items small { color: var(--muted); font: 600 10px/1.4 var(--font-data); letter-spacing: .06em; text-transform: uppercase; }
+.app-shell .build-icons { display: flex; flex-wrap: wrap; gap: 6px; }
+.app-shell .community-build-items .item-tile { display: inline-grid; overflow: visible; }
+.app-shell .build-icons-empty { color: var(--subtle); font-size: 12px; }
+.app-shell .community-build-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0 16px; color: var(--subtle); font: 11px var(--font-data); }
+.app-shell .build-details-link { margin: auto 16px 16px; color: var(--accent-bright); font: 700 11px var(--font-data); letter-spacing: .08em; }
+
+/* ---- Build detail page: item rows ---- */
+.app-shell .build-category-item-link { gap: 10px; font-size: 13px; font-weight: 600; }
+.app-shell .build-category-item-link > .item-tile { flex: none; width: 40px; height: 40px; background: radial-gradient(circle at 50% 25%, var(--slot-deep), #0f0c14 88%); }
+.app-shell .build-category-item { padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); }
+.app-shell .build-category-item small { font-size: 11px; }
+
+/* ---- Loading skeletons: match the purple theme instead of the old green-grey ---- */
+.app-shell .leaderboard-skeleton,
+.app-shell .leaderboard-table-wrap,
+.app-shell .leaderboard-filters { border-color: var(--line); background: var(--panel); }
+.app-shell .leaderboard-skeleton > div,
+.app-shell .builds-skeleton > div,
+.app-shell .items-skeleton > div { background: linear-gradient(100deg, var(--panel), var(--panel-raised), var(--panel)); background-size: 200% 100%; }
+
+@media (max-width: 1000px) { .app-shell .builds-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .app-shell .heroes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .app-shell .hero-card-body { margin-top: -44px; padding: 0 10px 10px; }
+  .app-shell .hero-card-body h2 { font-size: 17px; }
+  .app-shell .community-build-items > div { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* ---- Current (painted) item icons ---- */
+.item-tile img[data-icon="color"] { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.app-shell .item-card-art img[data-icon="color"] { width: 78px; height: 78px; border-radius: 14px; object-fit: cover; filter: none; box-shadow: 0 8px 22px color-mix(in srgb, var(--slot) 40%, transparent); }
+.app-shell .build-category-item-link > .item-tile img[data-icon="color"] { width: 100%; height: 100%; }
+
+/* ---- Legal / attribution line ---- */
+.site-legal { width: min(100%, 1210px); margin: 0 auto; padding: 0 42px 36px; color: var(--subtle); font-size: 11px; line-height: 1.6; }
+.site-legal a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.site-legal a:hover { color: var(--ink); }
+@media (max-width: 600px) { .site-legal { padding: 0 16px 28px; } }
+.legal-page { display: grid; gap: 10px; max-width: 760px; }
+.legal-page h1 { margin: 0; font: 800 clamp(28px, 4vw, 38px) / 1.1 var(--font-ui); }
+.legal-page h2 { margin: 18px 0 0; font: 700 17px var(--font-ui); }
+.legal-page p, .legal-page li { margin: 0; color: #c5cad4; font-size: 14px; line-height: 1.65; }
+.legal-page ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }

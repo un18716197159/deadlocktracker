@@ -1,0 +1,5 @@
+.lang-switch { position: relative; display: inline-flex; flex: none; align-items: center; gap: 6px; box-sizing: border-box; height: 36px; padding: 0 8px 0 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: #1a1d24; color: var(--muted); }
+.lang-switch:hover { border-color: #5b6272; }
+.lang-switch select { height: 100%; padding: 0 2px; border: 0; background: transparent; color: var(--ink); font: 600 13px var(--font-ui); cursor: pointer; outline: none; }
+.lang-switch select option { background: #161920; color: var(--ink); }
+@media (max-width: 600px) { .lang-switch select { max-width: 74px; } }

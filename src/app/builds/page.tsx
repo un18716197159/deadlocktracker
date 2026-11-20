@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import AppShell from "../components/app-shell";
-import { getHeroes } from "../../lib/deadlock-api";
+import { getLocalizedHeroes } from "../../lib/localized";
 import Builds from "./builds";
 
 export const metadata = { title: "Community Builds | Deadlock Intelligence" };
 
 async function BuildCatalog({ searchParams }: { searchParams: Promise<{ heroId?: string }> }) {
-  const [heroes, query] = await Promise.all([getHeroes(), searchParams]);
+  const [heroes, query] = await Promise.all([getLocalizedHeroes(), searchParams]);
   const rawHeroId = query.heroId;
   const initialHeroId = rawHeroId && /^\d+$/.test(rawHeroId) && Number.isSafeInteger(Number(rawHeroId)) && heroes.some((hero) => hero.id === Number(rawHeroId))
     ? Number(rawHeroId)

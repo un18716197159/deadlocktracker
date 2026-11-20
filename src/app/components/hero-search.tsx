@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useI18n } from "../../lib/i18n/provider";
 import "./hero-search.css";
 
 type Player = { account_id?: number; personaname?: string; avatar?: string; matches_played_last_30d?: number };
@@ -10,6 +11,7 @@ type Status = "idle" | "loading" | "done" | "error";
 
 export default function HeroSearch() {
   const router = useRouter();
+  const { t } = useI18n();
   const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -17,25 +19,16 @@ export default function HeroSearch() {
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
 
-  function onQueryChange(value: string) {
-    setQuery(value);
-    if (value.trim().length >= 2) {
-      setStatus("loading");
-      setError("");
-    } else {
-      setPlayers([]);
-      setStatus("idle");
-      setError("");
-    }
-  }
-
   // Live search, debounced.
   useEffect(() => {
     const term = query.trim();
     if (term.length < 2) {
+      setPlayers([]);
+      setStatus("idle");
       return;
     }
     const controller = new AbortController();
+    setStatus("loading");
     const timer = setTimeout(() => {
       fetch(`/api/players/search?q=${encodeURIComponent(term)}`, { signal: controller.signal })
         .then(async (response) => {
@@ -95,21 +88,21 @@ export default function HeroSearch() {
         <input
           ref={input}
           value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Search a Steam name or account ID…"
+          placeholder={t("search.placeholder")}
           aria-label="Search a Steam name or account ID"
           autoComplete="off"
         />
         <kbd>Ctrl K</kbd>
-        <button type="submit">Search</button>
+        <button type="submit">{t("search.button")}</button>
       </form>
       {showPanel && (
         <div className="hero-results" role="listbox" aria-label="Player search results">
-          {status === "loading" && <p className="hero-results-note">Searching…</p>}
+          {status === "loading" && <p className="hero-results-note">{t("search.loading")}</p>}
           {status === "error" && <p className="hero-results-note">{error}</p>}
-          {status === "done" && players.length === 0 && <p className="hero-results-note">No players found. Try another name or account ID.</p>}
+          {status === "done" && players.length === 0 && <p className="hero-results-note">{t("search.none")}</p>}
           {status === "done" &&
             players.map((player) => (
               <Link key={player.account_id} className="hero-result" href={`/players/${player.account_id}`} role="option" aria-selected={false}>

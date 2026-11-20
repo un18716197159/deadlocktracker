@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import AppShell from "./components/app-shell";
 import GlobalAnalyticsPanel from "./components/global-analytics-panel";
 import HeroSearch from "./components/hero-search";
+import RecentPlayers from "./components/recent-players";
+import { FavoritePlayers } from "./components/favorites";
+import MetaSnapshot from "./components/meta-snapshot";
+import { T } from "../lib/i18n/provider";
 import "./home.css";
 
 export const metadata: Metadata = {
@@ -11,12 +16,12 @@ export const metadata: Metadata = {
 };
 
 const hubs = [
-  { tag: "01", name: "Heroes", href: "/heroes", text: "Win rates, pick rates and details for every hero." },
-  { tag: "02", name: "Items", href: "/items", text: "Item win rates and how they perform in real matches." },
-  { tag: "03", name: "Builds", href: "/builds", text: "The builds players actually run, ranked by results." },
-  { tag: "04", name: "Matches", href: "/matches", text: "Browse recent matches and open full match details." },
-  { tag: "05", name: "Leaderboards", href: "/leaderboards", text: "Top players by region and by hero." },
-  { tag: "06", name: "Compare", href: "/compare", text: "Put two players side by side." },
+  { tag: "01", name: "Heroes", href: "/heroes", key: "heroes" as const },
+  { tag: "02", name: "Items", href: "/items", key: "items" as const },
+  { tag: "03", name: "Builds", href: "/builds", key: "builds" as const },
+  { tag: "04", name: "Matches", href: "/matches", key: "matches" as const },
+  { tag: "05", name: "Leaderboards", href: "/leaderboards", key: "leaderboards" as const },
+  { tag: "06", name: "Compare", href: "/compare", key: "compare" as const },
 ];
 
 export default function Home() {
@@ -24,28 +29,27 @@ export default function Home() {
     <AppShell active="Overview">
       <div className="content-inner">
         <section className="hero">
-          <h1>
-            Deadlock stats, <span>decoded.</span>
-          </h1>
-          <p className="hero-lede">Search any player for rank, matches and hero stats — plus live meta for heroes, items and builds.</p>
+          <h1><T k="home.title" /></h1>
+          <p className="hero-lede"><T k="home.lede" /></p>
           <HeroSearch />
+          <FavoritePlayers />
+          <RecentPlayers />
         </section>
 
         <nav className="hub-grid" aria-label="Explore">
           {hubs.map((hub) => (
             <Link key={hub.name} href={hub.href} className="hub-card">
               <em>{hub.tag}</em>
-              <strong>{hub.name}</strong>
-              <span>{hub.text}</span>
+              <strong><T k={`nav.${hub.key}`} /></strong>
+              <span><T k={`home.hub.${hub.key}`} /></span>
             </Link>
           ))}
         </nav>
 
+        <Suspense fallback={null}><MetaSnapshot /></Suspense>
+
         <GlobalAnalyticsPanel />
 
-        <footer>
-          DEADLOCK INTELLIGENCE <b>·</b> DATA WITH INTENT
-        </footer>
       </div>
     </AppShell>
   );

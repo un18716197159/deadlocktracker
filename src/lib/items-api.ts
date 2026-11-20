@@ -1,6 +1,7 @@
 import "server-only";
 import { cachedUpstream } from "./db/cache";
 import { cacheNowSeconds, deadlockHeaders } from "./upstream";
+import { cacheLife } from "next/cache";
 import { getHeroes, type HeroAsset } from "./deadlock-api";
 
 const API = "https://api.deadlock-api.com/v1";
@@ -26,7 +27,7 @@ export type ItemAsset = {
   shopable?: boolean;
   image?: string | null;
   image_webp?: string | null;
-  description?: { desc?: string | null } | null;
+  description?: { desc?: string | null; active?: string | null; passive?: string | null } | null;
   properties?: Record<string, ItemProperty | null> | null;
   is_active_item?: boolean;
   heroes?: number[] | null;
@@ -82,25 +83,15 @@ function filtersQuery(filters: ItemAnalyticsFilters, bucket: string, heroId?: nu
 }
 
 export async function getAllItemAssets(): Promise<ItemAsset[]> {
-  // Resolve the newest game build first. The explicit version in the item URL
-  // prevents a stale catalog from being mixed with newer analytics item IDs.
-  const versions = await requestJson<unknown>("/assets/client-versions");
-  if (!Array.isArray(versions) || versions.length === 0) {
-    throw new ItemApiError("Deadlock API did not return available game versions.", 502);
-  }
+  return getAllItemAssetsIn("english");
+}
 
-  const latestVersion = versions.reduce<number>((latest, version) =>
-    typeof version === "number" && Number.isSafeInteger(version) && version > latest ? version : latest, 0);
-  if (latestVersion <= 0) {
-    throw new ItemApiError("Deadlock API returned an invalid latest game version.", 502);
-  }
-
-  // requestJson uses the existing 10-minute upstream cache. Because the
-  // version is part of the cache key, a new game patch gets a fresh catalog.
-  const result = await requestJson<unknown>(`/assets/items?language=english&client_version=${latestVersion}`);
+export async function getAllItemAssetsIn(language: string): Promise<ItemAsset[]> {
+  "use cache";
+  cacheLife("days");
+  const result = await requestJson<unknown>(`/assets/items?language=${encodeURIComponent(language)}`);
   if (!Array.isArray(result)) throw new ItemApiError("Deadlock API returned an invalid item catalog.", 502);
-  return (result as ItemAsset[]).filter((item) =>
-    Number.isSafeInteger(item.id) && typeof item.name === "string" && typeof item.class_name === "string");
+  return (result as ItemAsset[]).filter((item) => Number.isSafeInteger(item.id) && typeof item.name === "string");
 }
 
 export async function getItemAssets(): Promise<ItemAsset[]> {
@@ -112,6 +103,9 @@ export async function getItemAsset(itemId: number): Promise<ItemAsset | undefine
 }
 
 export async function getItemAnalytics(filters: ItemAnalyticsFilters, heroId?: number): Promise<ItemAnalyticsResponse> {
+  // Cached so the time window (cacheNowSeconds) is computed once, not during every prerender.
+  "use cache";
+  cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
   const params = filtersQuery(filters, "no_bucket", heroId);
   params.set("min_matches", "1");
   const heroParams = filtersQuery(filters, "no_bucket", heroId);
@@ -182,12 +176,25 @@ export async function getItemFlow(filters: ItemAnalyticsFilters, heroId?: number
     });
 }
 
-export async function getCommunityBuilds(options: { start?: number; limit?: number; sort?: "weekly_favorites" | "favorites" | "updated_at"; heroId?: number; query?: string } = {}): Promise<BuildView[]> {
+/** Item assets in the given API language, falling back to English if that language is not available. */
+async function itemsIn(language?: string): Promise<ItemAsset[]> {
+  if (language && language !== "english") {
+    try {
+      const localized = await getAllItemAssetsIn(language);
+      if (localized.length) return localized;
+    } catch {
+      /* fall back to English */
+    }
+  }
+  return getAllItemAssets();
+}
+
+export async function getCommunityBuilds(options: { start?: number; limit?: number; sort?: "weekly_favorites" | "favorites" | "updated_at"; heroId?: number; query?: string; language?: string } = {}): Promise<BuildView[]> {
   const params = new URLSearchParams({ start: String(options.start ?? 0), limit: String(Math.min(Math.max(options.limit ?? 18, 1), 50)), sort_by: options.sort ?? "weekly_favorites", sort_direction: "desc", only_latest: "true", build_language: "English" });
   if (options.heroId !== undefined) params.set("hero_id", String(options.heroId));
   if (options.query?.trim()) params.set("search_name", options.query.trim().slice(0, 80));
   const [builds, heroes, items] = await Promise.all([
-    requestJson<CommunityBuild[]>(`/builds?${params}`), getHeroes(), getAllItemAssets(),
+    requestJson<CommunityBuild[]>(`/builds?${params}`), getHeroes(), itemsIn(options.language),
   ]);
   const heroById = new Map(heroes.flatMap((hero) => typeof hero.id === "number" ? [[hero.id, hero] as const] : []));
   const itemById = new Map(items.map((item) => [item.id, item]));
@@ -202,9 +209,9 @@ export async function getCommunityBuilds(options: { start?: number; limit?: numb
   }));
 }
 
-export async function getCommunityBuild(heroId: number, buildId: number): Promise<BuildView> {
+export async function getCommunityBuild(heroId: number, buildId: number, language?: string): Promise<BuildView> {
   const [build, heroes, items] = await Promise.all([
-    requestJson<CommunityBuild>(`/builds/${heroId}/${buildId}`), getHeroes(), getAllItemAssets(),
+    requestJson<CommunityBuild>(`/builds/${heroId}/${buildId}`), getHeroes(), itemsIn(language),
   ]);
   const hero = heroes.find((entry) => entry.id === heroId) ?? null;
   const itemById = new Map(items.map((item) => [item.id, item]));
@@ -218,3 +225,4 @@ export async function getCommunityBuild(heroId: number, buildId: number): Promis
     })),
   };
 }
+

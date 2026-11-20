@@ -2,7 +2,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppShell from "../../components/app-shell";
-import { getItemAsset } from "../../../lib/items-api";
+import { getAllItemAssetsIn, getItemAsset } from "../../../lib/items-api";
+import { apiLanguage, getRequestLocale } from "../../../lib/i18n/server";
 import ItemDetail from "./item-detail";
 
 export const metadata = { title: "Item Details | Deadlock Intelligence" };
@@ -11,7 +12,13 @@ async function Content({ params }: { params: Promise<{ itemId: string }> }) {
   await connection();
   const { itemId } = await params;
   if (!/^\d+$/.test(itemId) || !Number.isSafeInteger(Number(itemId))) notFound();
-  const item = await getItemAsset(Number(itemId));
+  const language = apiLanguage(await getRequestLocale());
+  let item = await getItemAsset(Number(itemId));
+  if (item && language !== "english") {
+    // Localized name/description; keep the English asset if the API rejects that language.
+    const localized = await getAllItemAssetsIn(language).catch(() => []);
+    item = localized.find((entry) => entry.id === Number(itemId)) ?? item;
+  }
   if (!item) notFound();
   return <ItemDetail item={item} />;
 }

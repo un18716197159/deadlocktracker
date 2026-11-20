@@ -12,3 +12,13 @@ CREATE TABLE IF NOT EXISTS cache_entries (
   value jsonb NOT NULL,
   expires_at timestamptz NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id serial PRIMARY KEY,
+  owner_account_id integer NOT NULL,
+  player_account_id integer NOT NULL,
+  name text NOT NULL,
+  avatar text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT favorites_owner_player UNIQUE (owner_account_id, player_account_id)
+);

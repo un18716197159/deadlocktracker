@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { BuildView } from "../../lib/items-api";
-import { heroPortrait, itemImage } from "../../lib/assets";
+import { heroPortrait } from "../../lib/assets";
+import ItemTile from "../components/item-tile";
+import { useI18n } from "../../lib/i18n/provider";
 
 type Props = { heroes: HeroAsset[]; initialHeroId: number | null };
 type Payload = { builds: BuildView[] };
 
 export default function Builds({ heroes, initialHeroId }: Props) {
+  const { locale } = useI18n();
   const [heroId, setHeroId] = useState(initialHeroId === null ? "all" : String(initialHeroId));
   const [sort, setSort] = useState("weekly_favorites");
   const [query, setQuery] = useState("");
@@ -19,14 +22,14 @@ export default function Builds({ heroes, initialHeroId }: Props) {
   const [error, setError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams({ limit: "24", sort, ...(heroId === "all" ? {} : { heroId }), ...(submittedQuery ? { q: submittedQuery } : {}) });
+    const params = new URLSearchParams({ limit: "24", sort, lang: locale, ...(heroId === "all" ? {} : { heroId }), ...(submittedQuery ? { q: submittedQuery } : {}) });
     fetch("/api/builds?" + params, { signal: controller.signal })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error || "Could not load community builds."); return data as Payload; })
       .then((data) => setRows(data.builds))
       .catch((reason: unknown) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Could not load community builds."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [heroId, sort, submittedQuery]);
+  }, [heroId, sort, submittedQuery, locale]);
   const refresh = (action: () => void) => { setLoading(true); setError(""); action(); };
   const count = (value?: number | null) => typeof value === "number" ? value.toLocaleString() : "Unavailable";
   const formatDate = (value?: number | null) => typeof value === "number" ? new Date(value * 1000).toLocaleDateString() : "Date unavailable";
@@ -39,7 +42,32 @@ export default function Builds({ heroes, initialHeroId }: Props) {
     {!loading && !error && rows.length > 0 && <div className="builds-grid">{rows.map(({ build, hero, categories }) => {
       const heroBuild = build.hero_build;
       const image = hero ? heroPortrait(hero) : null;
-      return <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}><div className="community-build-top">{image ? <img className="community-build-hero-art" src={image} alt="" /> : <span className="community-build-hero-art" aria-hidden="true" />}<div><Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link><h2>{heroBuild.name}</h2><p>{heroBuild.description || "No build description provided."}</p></div></div><div className="community-build-meta"><span>{count(build.num_weekly_favorites)} weekly favorites</span><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div><div className="community-build-items">{categories.slice(0, 3).map((category) => <div className="community-build-category" key={category.name}><small>{category.name}</small><span className="community-build-item-list">{category.items.slice(0, 4).map((entry, index) => entry.item && itemImage(entry.item) ? <span className="community-build-item-wrap" key={`${entry.item.id}-${index}`}><img className="community-build-item" src={itemImage(entry.item) as string} alt={entry.item.name} title={entry.item.name} /></span> : <span className="community-build-item community-build-item-empty" key={`missing-${index}`} title="Asset unavailable" />)}</span></div>)}</div><Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link></article>;
+      return (
+        <article className="community-build-card" key={`${heroBuild.hero_id}-${heroBuild.hero_build_id}`}>
+          <div className="community-build-top">
+            <span className="community-build-hero-art" aria-hidden="true" style={image ? { backgroundImage: `url("${image}")` } : undefined} />
+            <div>
+              <Link href={`/heroes/${heroBuild.hero_id}`} className="eyebrow">{hero?.name || `Hero ${heroBuild.hero_id}`}</Link>
+              <h2>{heroBuild.name}</h2>
+              <p>{heroBuild.description || "No build description provided."}</p>
+            </div>
+            <span className="community-build-fav" title="Weekly favorites">★ {count(build.num_weekly_favorites)}</span>
+          </div>
+          <div className="community-build-items">
+            {categories.slice(0, 3).map((category) => (
+              <div key={category.name}>
+                <small>{category.name}</small>
+                <div className="build-icons">
+                  {category.items.slice(0, 8).map((entry, index) => <ItemTile key={`${entry.item?.id ?? "x"}-${index}`} item={entry.item} />)}
+                  {category.items.length === 0 && <span className="build-icons-empty">No item entries</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="community-build-meta"><span>Version {heroBuild.version}</span><span>Updated {formatDate(heroBuild.last_updated_timestamp)}</span></div>
+          <Link className="build-details-link" href={`/builds/${heroBuild.hero_id}/${heroBuild.hero_build_id}`}>View build details ↗</Link>
+        </article>
+      );
     })}</div>}
     {!loading && !error && rows.length === 0 && <p className="api-message">No published builds matched these filters.</p>}
     <footer>DEADLOCK INTELLIGENCE · COMMUNITY BUILDS</footer>

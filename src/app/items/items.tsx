@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { HeroAsset } from "../../lib/deadlock-api";
 import type { ItemAnalytics, ItemAnalyticsFilters, ItemAsset, ItemFlowView } from "../../lib/items-api";
-import { itemImage } from "../../lib/assets";
+import ItemArt from "../components/item-art";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
 type AnalyticsPayload = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null };
@@ -80,9 +80,8 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
     {error && <p className="api-message error-message" role="alert">Item analytics unavailable. {error}</p>}
     {!loading && !error && filteredAssets.length > 0 && <div className="items-grid">{filteredAssets.map((item) => {
       const stat = analytics?.stats[String(item.id)];
-      const art = itemImage(item);
-      return <Link className="item-card" href={`/items/${item.id}`} key={item.id}>
-        <span className="item-card-art" aria-hidden="true">{art ? <ItemArtwork item={item} /> : <i />}</span>
+      return <Link className="item-card" data-slot={item.item_slot_type} href={`/items/${item.id}`} key={item.id}>
+        <span className="item-card-art" aria-hidden="true" data-tier={item.item_tier ?? undefined}><ItemArt item={item} /></span>
         <span className="item-card-content"><span className="item-card-meta"><span>{item.item_slot_type || "ITEM"} / T{item.item_tier ?? "—"}</span><b>{typeof item.cost === "number" ? `${item.cost.toLocaleString()} souls` : "Cost unavailable"}</b></span><strong>{item.name}</strong>
           <span className="item-card-description">{item.description?.desc ? plainText(item.description.desc) : ""}</span>
           {loading ? <span className="item-card-stat-state">Loading selected sample…</span> : stat ? <span className="item-card-stats"><span><small>PLAYER PICKS</small><b>{num(stat.matches)}</b></span><span><small>PICK RATE</small><b>{pct(stat.pickRate)}</b></span><span><small>WIN RATE</small><b>{pct(stat.winRate)}</b></span></span> : <span className="item-card-stat-state">No purchase statistics in this selection.</span>}
@@ -100,39 +99,6 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
     <div className="items-footer-links"><Link href="/heroes">Explore hero analytics ↗</Link><Link href="/matches">Explore matches ↗</Link></div>
     <footer>DEADLOCK INTELLIGENCE · ITEM DATA</footer>
   </main>;
-}
-
-function wikiItemIcon(name: string) {
-  // The Wiki stores the familiar square shop icons as files named after the
-  // displayed item. MediaWiki resolves the current file revision for us.
-  const fileName = `${name.trim().replace(/\s+/g, "_")}.png`;
-  return `https://deadlock.wiki/Special:FilePath/${encodeURIComponent(fileName)}`;
-}
-
-function ItemArtwork({ item }: { item: ItemAsset }) {
-  const apiImage = item.image_webp || item.image || "";
-  const wikiImage = wikiItemIcon(item.name);
-  const [src, setSrc] = useState(wikiImage);
-  const [fallbackIndex, setFallbackIndex] = useState(0);
-  const fallbacks = [apiImage, item.image || ""].filter((value, index, values) => value && values.indexOf(value) === index);
-  if (!src) return <i />;
-  return <img
-    src={src}
-    alt={`${item.name} item icon`}
-    width={96}
-    height={96}
-    loading="lazy"
-    decoding="async"
-    onError={() => {
-      const next = fallbacks[fallbackIndex];
-      if (next && next !== src) {
-        setFallbackIndex((index) => index + 1);
-        setSrc(next);
-      } else {
-        setSrc("");
-      }
-    }}
-  />;
 }
 
 function plainText(value: string) { return value.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/\s+/g, " ").trim(); }

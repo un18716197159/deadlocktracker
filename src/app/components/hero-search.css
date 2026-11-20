@@ -1,5 +1,5 @@
 .hero-search { position: relative; width: min(100%, 720px); margin: 0 auto; text-align: left; }
-.hero-search form { display: flex; align-items: center; gap: var(--space-3); height: 58px; padding: 0 8px 0 var(--space-5); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--surface-shadow); transition: border-color .15s; }
+.hero-search form { display: flex; backdrop-filter: blur(10px); align-items: center; gap: var(--space-3); height: 58px; padding: 0 8px 0 var(--space-5); border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--surface-shadow); transition: border-color .15s; }
 .hero-search form:focus-within { border-color: var(--accent); }
 .hero-search form svg { width: 20px; height: 20px; flex: none; color: var(--subtle); }
 .hero-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: 500 16px var(--font-ui); }

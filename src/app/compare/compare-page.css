@@ -1,0 +1,10 @@
+.cmp-metrics { display: grid; gap: 4px; margin-top: 14px; }
+.cmp-row { display: grid; grid-template-columns: 1fr minmax(120px, 1.2fr) 1fr; gap: 16px; align-items: center; padding: 10px 14px; border-radius: 6px; background: #12151b; }
+.cmp-row > strong { font: 700 16px var(--font-ui); font-variant-numeric: tabular-nums; color: var(--muted); }
+.cmp-row > strong:last-child { text-align: right; }
+.cmp-row > strong[data-lead="true"] { color: #5cc690; }
+.cmp-mid { display: grid; gap: 5px; text-align: center; }
+.cmp-mid small { color: var(--subtle); font: 600 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; }
+.cmp-bar { display: block; height: 5px; border-radius: 3px; background: #6fb5ff; overflow: hidden; }
+.cmp-bar i { display: block; height: 100%; background: #f0b254; }
+@media (max-width: 600px) { .cmp-row { grid-template-columns: 1fr 1fr; } .cmp-mid { grid-column: 1 / -1; order: -1; } }

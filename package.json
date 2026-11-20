@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "icons:sync": "node scripts/fetch-item-icons.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
