@@ -8,7 +8,7 @@ import ItemArt from "../components/item-art";
 import { L, useI18n } from "../../lib/i18n/provider";
 
 const initialFilters: ItemAnalyticsFilters = { period: "30d", gameMode: "normal", matchMode: "ranked,unranked", rating: "all" };
-type AnalyticsPayload = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null };
+type AnalyticsPayload = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null; periodUsed?: string };
 type Props = { assets: ItemAsset[]; heroes: HeroAsset[]; initialHeroId: number | null };
 
 export default function Items({ assets, heroes, initialHeroId }: Props) {
@@ -79,7 +79,8 @@ export default function Items({ assets, heroes, initialHeroId }: Props) {
     </div>
     {heroId !== "all" && <p className="items-scope-note">Showing item data for {heroes.find((hero) => String(hero.id) === heroId)?.name || `hero ${heroId}`}.</p>}
     {loading && <div className="items-skeleton" role="status" aria-label="Loading item analytics" aria-busy="true">{[0, 1, 2, 3, 4, 5].map((item) => <div key={item} />)}</div>}
-    {error && <p className="api-message error-message" role="alert">Item analytics unavailable. {error}</p>}
+    {error && <p className="api-message error-message" role="alert">{p("Item analytics unavailable.")} {error}</p>}
+    {!error && analytics?.periodUsed && analytics.periodUsed !== filters.period && <p className="api-message" role="status">{p("The Deadlock API is busy with this period right now, so the last 7 days are shown.")}</p>}
     {!loading && !error && filteredAssets.length > 0 && <div className="items-grid">{filteredAssets.map((item) => {
       const stat = analytics?.stats[String(item.id)];
       return <Link className="item-card" data-slot={item.item_slot_type} href={`/items/${item.id}`} key={item.id}>

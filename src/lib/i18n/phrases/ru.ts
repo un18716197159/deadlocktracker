@@ -81,6 +81,7 @@ const ru: PhraseBook = {
   "Crit damage": "Крит. урон", "Tech range": "Дальность способностей", "Reload speed": "Скорость перезарядки", "Tech duration": "Длительность способностей",
   "Air dash duration": "Длительность рывка в воздухе", "Move acceleration": "Ускорение", "Weapon power scale": "Рост силы оружия",
   "weapon": "оружие", "spirit": "дух", "vitality": "живучесть", "StreetBrawl": "Street Brawl",
+  "Item analytics unavailable.": "Статистика предметов недоступна.", "The Deadlock API is busy with this period right now, so the last 7 days are shown.": "Deadlock API сейчас перегружен для этого периода, поэтому показаны последние 7 дней.",
 };
 
 export default ru;

@@ -42,7 +42,22 @@ export type ItemAnalyticsFilters = {
 };
 export type ItemStat = { item_id: number; bucket: number; wins: number; losses: number; matches: number; players: number; avg_buy_time_s: number; avg_sell_time_s: number; avg_buy_time_relative: number; avg_sell_time_relative: number; sold?: number };
 export type ItemAnalytics = { matches: number; players: number; wins: number; losses: number; winRate: number | null; pickRate: number | null; avgBuyTimeS: number | null; avgSellTimeS: number | null; sold: number | null };
-export type ItemAnalyticsResponse = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null };
+export type ItemAnalyticsResponse = { stats: Record<string, ItemAnalytics>; playerMatches: number; heroScope: number | null; periodUsed?: ItemAnalyticsFilters["period"] };
+
+/**
+ * The Deadlock API sometimes answers 504 (and caches that for ~2 minutes) for heavy, long windows
+ * such as 30 or 90 days of item stats, while 7 days still works. On such an error (5xx / 429) the
+ * request is repeated for the last 7 days, and periodUsed says so, instead of showing an empty page.
+ */
+export async function withShorterPeriod<T>(filters: ItemAnalyticsFilters, load: (filters: ItemAnalyticsFilters) => Promise<T>): Promise<{ value: T; periodUsed: ItemAnalyticsFilters["period"] }> {
+  try {
+    return { value: await load(filters), periodUsed: filters.period };
+  } catch (error) {
+    const retryable = error instanceof ItemApiError && (error.status >= 500 || error.status === 429);
+    if (!retryable || filters.period === "7d") throw error;
+    return { value: await load({ ...filters, period: "7d" }), periodUsed: "7d" };
+  }
+}
 export type ItemHeroStat = { hero: HeroAsset; matches: number; players: number; wins: number; losses: number; winRate: number | null; pickRate: number | null };
 export type ItemFlowEdge = { from_column: number; from_item_id: number; to_item_id: number; wins: number; losses: number; matches: number };
 export type ItemFlowView = { fromColumn: number; fromItem: Pick<ItemAsset, "id" | "name" | "image" | "image_webp"> | null; toItem: Pick<ItemAsset, "id" | "name" | "image" | "image_webp"> | null; wins: number; losses: number; matches: number; winRate: number | null };
@@ -108,6 +123,11 @@ export async function getItemAnalytics(filters: ItemAnalyticsFilters, heroId?: n
   // Cached so the time window (cacheNowSeconds) is computed once, not during every prerender.
   "use cache";
   cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+  const { value, periodUsed } = await withShorterPeriod(filters, (window) => loadItemAnalytics(window, heroId));
+  return { ...value, periodUsed };
+}
+
+async function loadItemAnalytics(filters: ItemAnalyticsFilters, heroId?: number): Promise<ItemAnalyticsResponse> {
   const params = filtersQuery(filters, "no_bucket", heroId);
   params.set("min_matches", "1");
   const heroParams = filtersQuery(filters, "no_bucket", heroId);

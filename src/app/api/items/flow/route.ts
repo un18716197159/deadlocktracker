@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cachedJson } from "@/lib/http";
-import { getItemFlow, ItemApiError, type ItemAnalyticsFilters } from "../../../../lib/items-api";
+import { getItemFlow, ItemApiError, withShorterPeriod, type ItemAnalyticsFilters } from "../../../../lib/items-api";
 
 function parseFilters(request: NextRequest): { filters: ItemAnalyticsFilters; heroId?: number } {
   const query = request.nextUrl.searchParams;
@@ -22,7 +22,8 @@ function parseFilters(request: NextRequest): { filters: ItemAnalyticsFilters; he
 export async function GET(request: NextRequest) {
   try {
     const { filters, heroId } = parseFilters(request);
-    return cachedJson({ flows: await getItemFlow(filters, heroId) });
+    const { value, periodUsed } = await withShorterPeriod(filters, (window) => getItemFlow(window, heroId));
+    return cachedJson({ flows: value, periodUsed });
   } catch (error) {
     const message = error instanceof ItemApiError ? error.message : "Could not load item flow analytics.";
     return NextResponse.json({ error: message }, { status: 502 });
